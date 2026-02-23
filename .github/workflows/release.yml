@@ -97,10 +97,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            artifacts/resource-fetcher-linux/resource-fetcher
-            artifacts/resource-fetcher-windows/resource-fetcher.exe
-            artifacts/resource-fetcher-macos/resource-fetcher
+          files: artifacts/resource-fetcher-*/resource-fetcher*
           generate_release_notes: true
           draft: false
           prerelease: false
