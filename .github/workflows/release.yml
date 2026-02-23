@@ -18,15 +18,18 @@ jobs:
         include:
           - os: ubuntu-latest
             os_name: linux
-            binary_name: resource-fetcher-linux
+            cli_binary: resource-fetcher
+            gui_binary: resource-fetcher-gui
             binary_ext: ''
           - os: windows-latest
             os_name: windows
-            binary_name: resource-fetcher-windows
+            cli_binary: resource-fetcher.exe
+            gui_binary: resource-fetcher-gui.exe
             binary_ext: '.exe'
           - os: macos-latest
             os_name: macos
-            binary_name: resource-fetcher-macos
+            cli_binary: resource-fetcher
+            gui_binary: resource-fetcher-gui
             binary_ext: ''
 
     steps:
@@ -58,24 +61,47 @@ jobs:
         shell: bash
         run: poetry run pytest tests/ -v
 
-      - name: Build binary with PyInstaller
+      - name: Build CLI binary
         shell: bash
         run: |
-          poetry run pyinstaller --onefile --name ${{ matrix.binary_name }}${{ matrix.binary_ext }} src/resource_fetcher/cli/main.py
+          poetry run pyinstaller --onefile --name ${{ matrix.cli_binary }} --clean --distpath dist-cli src/resource_fetcher/cli/main.py
 
-      - name: Upload artifact (Linux/macOS)
+      - name: Build GUI binary
+        shell: bash
+        run: |
+          poetry run pyinstaller --onefile --name ${{ matrix.gui_binary }} --windowed --clean --distpath dist-gui --hidden-import tkinter --hidden-import ttkbootstrap --hidden-import pyperclip src/resource_fetcher/gui/main.py
+
+      - name: Rename binaries with platform suffix (Linux/macOS)
         if: runner.os != 'Windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: resource-fetcher-${{ matrix.os_name }}
-          path: dist/${{ matrix.binary_name }}${{ matrix.binary_ext }}
+        shell: bash
+        run: |
+          mv dist-cli/${{ matrix.cli_binary }} dist-cli/resource-fetcher-${{ matrix.os_name }}
+          mv dist-gui/${{ matrix.gui_binary }} dist-gui/resource-fetcher-gui-${{ matrix.os_name }}
+          chmod +x dist-cli/resource-fetcher-${{ matrix.os_name }}
+          chmod +x dist-gui/resource-fetcher-gui-${{ matrix.os_name }}
 
-      - name: Upload artifact (Windows)
+      - name: Rename binaries with platform suffix (Windows)
         if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          mv dist-cli/${{ matrix.cli_binary }} dist-cli/resource-fetcher-${{ matrix.os_name }}.exe
+          mv dist-gui/${{ matrix.gui_binary }} dist-gui/resource-fetcher-gui-${{ matrix.os_name }}.exe
+
+      - name: Upload CLI artifact
         uses: actions/upload-artifact@v4
         with:
-          name: resource-fetcher-${{ matrix.os_name }}
-          path: dist\${{ matrix.binary_name }}${{ matrix.binary_ext }}
+          name: resource-fetcher-cli-${{ matrix.os_name }}
+          path: |
+            dist-cli/resource-fetcher-${{ matrix.os_name }}*
+            dist-cli/resource-fetcher-${{ matrix.os_name }}*.exe
+
+      - name: Upload GUI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: resource-fetcher-gui-${{ matrix.os_name }}
+          path: |
+            dist-gui/resource-fetcher-gui-${{ matrix.os_name }}*
+            dist-gui/resource-fetcher-gui-${{ matrix.os_name }}*.exe
 
   release:
     needs: build
@@ -98,9 +124,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/resource-fetcher-linux/resource-fetcher-linux
-            artifacts/resource-fetcher-windows/resource-fetcher-windows.exe
-            artifacts/resource-fetcher-macos/resource-fetcher-macos
+            artifacts/resource-fetcher-cli-*/*
+            artifacts/resource-fetcher-gui-*/*
           generate_release_notes: true
           draft: false
           prerelease: false
