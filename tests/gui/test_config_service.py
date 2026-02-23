@@ -1,10 +1,7 @@
 """Unit tests for ConfigService."""
 
 import json
-import dataclasses
 from pathlib import Path
-
-import pytest
 
 from resource_fetcher.gui.core.config_service import ConfigService, DownloadConfig
 

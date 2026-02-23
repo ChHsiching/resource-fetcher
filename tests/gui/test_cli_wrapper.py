@@ -1,6 +1,5 @@
 """Unit tests for CLIWrapper."""
 
-import threading
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -162,7 +161,7 @@ class TestCLIWrapper:
         mock_popen.return_value = mock_process
 
         wrapper = CLIWrapper(valid_cli_file)
-        config = DownloadConfig()
+        DownloadConfig()
 
         # Start download (will create mock process)
         with patch.object(wrapper, "current_process", mock_process):
@@ -234,7 +233,7 @@ class TestCLIWrapper:
         def complete_callback(exit_code: int) -> None:
             pass
 
-        thread = wrapper.execute_download(
+        wrapper.execute_download(
             "http://example.com", config, progress_callback, complete_callback
         )
 

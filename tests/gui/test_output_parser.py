@@ -1,12 +1,11 @@
 """Unit tests for OutputParser."""
 
-import pytest
 
 from resource_fetcher.gui.core.output_parser import (
-    OutputParser,
-    SongProgress,
     AlbumInfo,
     DownloadSummary,
+    OutputParser,
+    SongProgress,
 )
 
 
