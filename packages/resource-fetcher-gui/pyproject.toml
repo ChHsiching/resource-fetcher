@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "resource-fetcher-gui"
+version = "0.2.0"
+description = "GUI tool for resource-fetcher - modern interface for batch downloads"
+authors = ["ChHsiching <hsichingchang@gmail.com>"]
+readme = "README.md"
+license = "MIT"
+packages = [
+    { include = "resource_fetcher_gui", from = "src" }
+]
+
+[tool.poetry.dependencies]
+python = "~3.10"
+resource-fetcher-core = "^0.2.0"
+ttkbootstrap = "^1.10.0"
+pillow = "^10.0.0"
+pyperclip = "^1.8.0"
+
+[tool.poetry.scripts]
+resource-fetcher-gui = "resource_fetcher_gui.main:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

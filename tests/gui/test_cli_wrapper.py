@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from resource_fetcher.gui.core.cli_wrapper import CLIWrapper
-from resource_fetcher.gui.core.config_service import DownloadConfig
+from resource_fetcher_gui.gui.core.cli_wrapper import CLIWrapper
+from resource_fetcher_gui.gui.core.config_service import DownloadConfig
 
 
 class TestCLIWrapper:

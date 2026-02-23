@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from resource_fetcher.adapters.izanmei import IzanmeiAdapter
-from resource_fetcher.cli.main import download_song
-from resource_fetcher.core.models import DownloadStatus
+from resource_fetcher_core.adapters.izanmei import IzanmeiAdapter
+from resource_fetcher_cli.cli.main import download_song
+from resource_fetcher_core.core.models import DownloadStatus
 
 
 class TestIzanmeiAdapterIntegration:

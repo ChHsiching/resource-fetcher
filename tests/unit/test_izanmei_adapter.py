@@ -2,7 +2,7 @@
 
 import pytest
 
-from resource_fetcher.adapters.izanmei import IzanmeiAdapter
+from resource_fetcher_core.adapters.izanmei import IzanmeiAdapter
 
 
 class TestIzanmeiAdapter:

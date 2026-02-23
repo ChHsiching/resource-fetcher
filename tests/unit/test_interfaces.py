@@ -2,8 +2,8 @@
 
 import pytest
 
-from resource_fetcher.core.interfaces import SiteAdapter
-from resource_fetcher.core.models import Album
+from resource_fetcher_core.core.interfaces import SiteAdapter
+from resource_fetcher_core.core.models import Album
 
 
 class TestSiteAdapterInterface:

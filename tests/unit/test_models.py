@@ -1,6 +1,6 @@
 """Test models for music downloader."""
 
-from resource_fetcher.core.models import Album, DownloadResult, DownloadStatus, Song
+from resource_fetcher_core.core.models import Album, DownloadResult, DownloadStatus, Song
 
 
 class TestSong:

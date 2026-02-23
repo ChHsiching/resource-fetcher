@@ -1,14 +1,26 @@
 [tool.poetry]
-name = "resource-fetcher-workspace"
+name = "resource-fetcher"
 version = "0.2.0"
 description = "Universal resource fetching framework with extensible architecture"
 authors = ["ChHsiching <hsichingchang@gmail.com>"]
 readme = "README.md"
 license = "MIT"
+packages = [
+    { include = "resource_fetcher", from = "src" }
+]
 
-# Poetry Workspace Configuration
+[tool.poetry.scripts]
+resource-fetcher = "resource_fetcher.cli.main:main"
+resource-fetcher-gui = "resource_fetcher.gui.main:main"
+
 [tool.poetry.dependencies]
 python = "~3.10"
+requests = "^2.31.0"
+beautifulsoup4 = "^4.12.0"
+lxml = "^5.0.0"
+ttkbootstrap = "^1.10.0"
+pillow = "^10.0.0"
+pyperclip = "^1.8.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
@@ -18,20 +30,13 @@ ruff = "^0.1.0"
 mypy = "^1.0.0"
 pyinstaller = "^6.0.0"
 
-[tool.poetry.workspace]
-members = [
-    "packages/resource-fetcher-core",
-    "packages/resource-fetcher-cli",
-    "packages/resource-fetcher-gui",
-]
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-# Shared Tool Configuration
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -58,7 +63,7 @@ select = [
 ignore = []
 
 [tool.ruff.isort]
-known-first-party = ["resource_fetcher_core", "resource_fetcher_cli", "resource_fetcher_gui"]
+known-first-party = ["resource_fetcher"]
 
 [tool.mypy]
 python_version = "3.10"

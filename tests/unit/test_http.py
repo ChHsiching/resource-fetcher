@@ -1,6 +1,6 @@
 """Unit tests for HTTP utility functions."""
 
-from resource_fetcher.utils.http import (
+from resource_fetcher_core.utils.http import (
     extract_filename_from_headers,
     fix_mojibake,
     sanitize_filename,
