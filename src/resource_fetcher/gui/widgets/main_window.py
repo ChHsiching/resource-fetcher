@@ -1,13 +1,18 @@
 """Main application window for Resource Fetcher GUI."""
 
 import logging
+import sys
 import tkinter as tk
 import tkinter.ttk as ttk
+from pathlib import Path
 
 import ttkbootstrap as bootstrap
 
+from resource_fetcher.gui.core.cli_wrapper import CLIWrapper
 from resource_fetcher.gui.core.config_service import ConfigService, DownloadConfig
+from resource_fetcher.gui.core.output_parser import OutputParser, SongProgress
 from resource_fetcher.gui.widgets.config_widget import ConfigWidget
+from resource_fetcher.gui.widgets.progress_widget import ProgressWidget
 from resource_fetcher.gui.widgets.status_bar import StatusBar
 from resource_fetcher.gui.widgets.url_input_widget import URLInputWidget
 
@@ -36,6 +41,19 @@ class MainWindow(bootstrap.Window):
 
         # Initialize services
         self.config_service = ConfigService()
+        self.cli_wrapper: CLIWrapper | None = None
+        self.output_parser = OutputParser()
+
+        # Determine CLI path
+        cli_path = Path("dist/resource-fetcher.exe")
+        if sys.platform != "win32":
+            cli_path = Path("dist/resource-fetcher")
+
+        if cli_path.exists():
+            self.cli_wrapper = CLIWrapper(cli_path)
+            logger.info(f"CLI wrapper initialized with: {cli_path}")
+        else:
+            logger.warning(f"CLI not found at {cli_path} (will be available after build)")
 
         # Center window on screen
         self.center_window()
@@ -98,15 +116,9 @@ class MainWindow(bootstrap.Window):
         )
         self.stop_btn.pack(side=tk.LEFT, padx=(0, 5))
 
-        # Progress placeholder label
-        progress_frame = ttk.LabelFrame(main_container, text="Progress", padding=10)
-        progress_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
-
-        ttk.Label(
-            progress_frame,
-            text="Progress display will be implemented in Phase 3",
-            font=("TkDefaultFont", 10, "italic"),
-        ).pack(expand=True)
+        # Progress Widget
+        self.progress_widget = ProgressWidget(main_container)
+        self.progress_widget.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
 
         # Status Bar
         self.status_bar = StatusBar(main_container)
@@ -150,11 +162,18 @@ class MainWindow(bootstrap.Window):
             self.status_bar.error(f"Invalid URL: {error_msg}")
             return
 
-        # TODO: Phase 4 - Use config for actual download
-        _ = self.config_widget.get_config()
+        if not self.cli_wrapper:
+            self.status_bar.error("CLI executable not found. Please build the project first.")
+            return
+
+        config = self.config_widget.get_config()
 
         # Add to history
         self.url_input.add_to_history(url)
+
+        # Clear previous progress
+        self.progress_widget.clear()
+        self.output_parser.reset()
 
         # Update UI state
         self.download_btn.config(state=tk.DISABLED)
@@ -167,17 +186,60 @@ class MainWindow(bootstrap.Window):
 
         self.status_bar.log_info(f"Starting download from: {url}")
 
-        # TODO: Phase 4 - Integrate with CLIWrapper for actual download
-        self.after(2000, self._simulate_download_complete)
+        # Start download in background thread
+        self.cli_wrapper.execute_download(
+            url,
+            config,
+            progress_callback=self._on_progress,
+            complete_callback=self._on_download_complete,
+        )
+
+    def _on_progress(self, line: str) -> None:
+        """Handle CLI output progress.
+
+        Args:
+            line: Line of CLI output.
+        """
+        # Parse output
+        result = self.output_parser.parse_line(line)
+
+        if isinstance(result, SongProgress):
+            # Update progress widget from main thread
+            self.after(0, lambda: self.progress_widget.update_progress(result))
+            self.after(0, lambda: self.progress_widget.scroll_to_bottom())
+
+        # Also log the line
+        self.status_bar.log_info(line.strip())
+
+    def _on_download_complete(self, exit_code: int) -> None:
+        """Handle download completion.
+
+        Args:
+            exit_code: Process exit code.
+        """
+        if exit_code == 0:
+            self.status_bar.success("Download completed successfully!")
+        else:
+            failed = self.progress_widget.get_failed_songs()
+            if failed:
+                self.status_bar.error(
+                    f"Download completed with errors. {len(failed)} songs failed."
+                )
+                for title in failed:
+                    self.status_bar.error(f"  - {title}")
+            else:
+                self.status_bar.error(f"Download failed with exit code {exit_code}")
+
+        self._reset_ui_state()
 
     def _on_stop_clicked(self) -> None:
         """Handle stop button click."""
-        self.status_bar.warning("Download stopped")
-        self._reset_ui_state()
+        if self.cli_wrapper and self.cli_wrapper.is_running():
+            self.cli_wrapper.stop_download()
+            self.status_bar.warning("Download stopped by user")
+        else:
+            self.status_bar.warning("No download in progress")
 
-    def _simulate_download_complete(self) -> None:
-        """Simulate download completion (placeholder for Phase 4)."""
-        self.status_bar.success("Download complete (simulation)")
         self._reset_ui_state()
 
     def _reset_ui_state(self) -> None:
