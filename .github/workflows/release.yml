@@ -18,15 +18,15 @@ jobs:
         include:
           - os: ubuntu-latest
             os_name: linux
-            binary_name: resource-fetcher
+            binary_name: resource-fetcher-linux
             binary_ext: ''
           - os: windows-latest
             os_name: windows
-            binary_name: resource-fetcher
+            binary_name: resource-fetcher-windows
             binary_ext: '.exe'
           - os: macos-latest
             os_name: macos
-            binary_name: resource-fetcher
+            binary_name: resource-fetcher-macos
             binary_ext: ''
 
     steps:
@@ -61,21 +61,21 @@ jobs:
       - name: Build binary with PyInstaller
         shell: bash
         run: |
-          poetry run pyinstaller --onefile --name resource-fetcher${{ matrix.binary_ext }} src/resource_fetcher/cli/main.py
+          poetry run pyinstaller --onefile --name ${{ matrix.binary_name }}${{ matrix.binary_ext }} src/resource_fetcher/cli/main.py
 
       - name: Upload artifact (Linux/macOS)
         if: runner.os != 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: resource-fetcher-${{ matrix.os_name }}
-          path: dist/resource-fetcher${{ matrix.binary_ext }}
+          path: dist/${{ matrix.binary_name }}${{ matrix.binary_ext }}
 
       - name: Upload artifact (Windows)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: resource-fetcher-${{ matrix.os_name }}
-          path: dist\resource-fetcher${{ matrix.binary_ext }}
+          path: dist\${{ matrix.binary_name }}${{ matrix.binary_ext }}
 
   release:
     needs: build
@@ -97,7 +97,10 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/resource-fetcher-*/resource-fetcher*
+          files: |
+            artifacts/resource-fetcher-linux/resource-fetcher-linux
+            artifacts/resource-fetcher-windows/resource-fetcher-windows.exe
+            artifacts/resource-fetcher-macos/resource-fetcher-macos
           generate_release_notes: true
           draft: false
           prerelease: false
