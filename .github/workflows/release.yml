@@ -3,8 +3,15 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v*.*.*'        # Official releases: v0.2.0
+      - 'v*.*.*-*'      # Pre-releases: v0.2.0-beta.1, v0.3.0-alpha.1
   workflow_dispatch:
+    inputs:
+      prerelease:
+        description: 'Create as pre-release'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -35,6 +42,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for CHANGELOG generation
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -60,6 +69,48 @@ jobs:
       - name: Run tests
         shell: bash
         run: poetry run pytest tests/ -v
+
+      - name: Extract version from tag
+        id: version
+        shell: bash
+        run: |
+          # Extract version number from tag (v0.2.0-beta.1 -> 0.2.0-beta.1)
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+          # Detect if this is a pre-release version
+          if [[ "$VERSION" =~ -(alpha|beta|rc) ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            echo "This is a pre-release version"
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "This is an official release"
+          fi
+
+      - name: Generate CHANGELOG
+        shell: bash
+        run: |
+          echo "# Changelog" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "## [${{ steps.version.outputs.version }}]" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "### Changes since last release" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+
+          # Get commits since last tag (or all commits if first release)
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            echo "Generating changelog from $PREV_TAG to ${{ steps.version.outputs.version }}"
+            git log --pretty=format:"- %s" "$PREV_TAG..HEAD" >> CHANGELOG.md
+          else
+            echo "Generating changelog for initial release"
+            git log --pretty=format:"- %s" >> CHANGELOG.md
+          fi
+
+      - name: Display CHANGELOG
+        shell: bash
+        run: cat CHANGELOG.md
 
       - name: Build CLI binary
         shell: bash
@@ -128,6 +179,7 @@ jobs:
             artifacts/resource-fetcher-gui-*/*
           generate_release_notes: true
           draft: false
-          prerelease: false
+          prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
+          body_path: CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
