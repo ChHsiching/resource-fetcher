@@ -30,6 +30,8 @@ MANIFEST
 *.manifest
 # Allow our custom spec file
 !resource_fetcher.spec
+# PyInstaller auto-generated spec files
+*.exe.spec
 
 # Unit test / coverage reports
 htmlcov/
@@ -116,6 +118,5 @@ test_verify/
 *.log
 downloader.log
 
-# Comparison files
-*标准品质.mp3
-*高品质.mp3
+# Temporary release artifacts
+release-artifacts/
