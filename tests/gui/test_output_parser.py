@@ -1,7 +1,7 @@
 """Unit tests for OutputParser."""
 
 
-from resource_fetcher.gui.core.output_parser import (
+from resource_fetcher_gui.gui.core.output_parser import (
     AlbumInfo,
     DownloadSummary,
     OutputParser,

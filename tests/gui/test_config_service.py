@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from resource_fetcher.gui.core.config_service import ConfigService, DownloadConfig
+from resource_fetcher_gui.gui.core.config_service import ConfigService, DownloadConfig
 
 
 class TestDownloadConfig:
