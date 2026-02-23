@@ -3,17 +3,14 @@
 import argparse
 import logging
 import sys
+import time
 from pathlib import Path
-from typing import Optional
-from datetime import datetime
-
-from resource_fetcher.adapters.izanmei import IzanmeiAdapter
-from resource_fetcher.core.models import DownloadStatus, DownloadResult
-from resource_fetcher.adapters.registry import get_adapter
+from typing import Any
 
 import requests
-import time
 
+from resource_fetcher.adapters.registry import get_adapter
+from resource_fetcher.core.models import DownloadResult, DownloadStatus
 
 # Configure logging
 logging.basicConfig(
@@ -37,7 +34,7 @@ class DownloadProgress:
         self.skipped = 0
         self.start_time = time.time()
 
-    def update(self, result: DownloadResult):
+    def update(self, result: DownloadResult) -> None:
         """Update progress with download result."""
         if result.status == DownloadStatus.SUCCESS:
             self.success += 1
@@ -60,7 +57,7 @@ class DownloadProgress:
             f"  跳过 (Skipped): {self.skipped}",
             f"  总计 (Total): {self.total}",
             f"  耗时 (Time): {elapsed:.1f} 秒",
-            f"  速度 (Speed): {speed:.2f} 首/秒" if speed > 0 else f"  速度 (Speed): N/A",
+            f"  速度 (Speed): {speed:.2f} 首/秒" if speed > 0 else "  速度 (Speed): N/A",
             "=" * 60
         ]
         return "\n".join(lines)
@@ -74,7 +71,7 @@ def download_song(
     timeout: int = 60,
     retries: int = 3,
     overwrite: bool = False,
-    progress_callback=None
+    progress_callback: Any | None = None,
 ) -> DownloadResult:
     """
     Download a single song with retry logic.
@@ -103,7 +100,7 @@ def download_song(
 
             # Get filename from headers or use title
             from resource_fetcher.utils.http import extract_filename_from_headers, sanitize_filename
-            filename = extract_filename_from_headers(response.headers, song_id, song_title)
+            filename = extract_filename_from_headers(dict(response.headers), song_id, song_title)
             filename = sanitize_filename(filename)
             output_path = output_dir / filename
 
@@ -175,7 +172,7 @@ def download_song(
 def download_album(
     url: str,
     output_dir: Path,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     overwrite: bool = False,
     timeout: int = 60,
     retries: int = 3,
@@ -358,7 +355,7 @@ For more information, visit: https://github.com/ChHsiching/resource-fetcher
     return parser
 
 
-def main():
+def main() -> None:
     """Main CLI entry point."""
     parser = create_parser()
     args = parser.parse_args()

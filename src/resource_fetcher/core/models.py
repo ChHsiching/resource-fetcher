@@ -3,7 +3,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 
 
 class DownloadStatus(Enum):
@@ -78,7 +77,7 @@ class DownloadResult:
     """
 
     status: DownloadStatus
-    path: Optional[Path] = None
+    path: Path | None = None
     size: int = 0
     message: str = ""
 

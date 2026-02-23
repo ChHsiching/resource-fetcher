@@ -1,9 +1,8 @@
 """Adapter registry for managing website adapters."""
 
-from typing import Optional
-from resource_fetcher.core.interfaces import SiteAdapter
-from resource_fetcher.adapters.izanmei import IzanmeiAdapter
 
+from resource_fetcher.adapters.izanmei import IzanmeiAdapter
+from resource_fetcher.core.interfaces import SiteAdapter
 
 # Registry of available adapters
 ADAPTERS = [
@@ -11,7 +10,7 @@ ADAPTERS = [
 ]
 
 
-def get_adapter(url: str) -> Optional[SiteAdapter]:
+def get_adapter(url: str) -> SiteAdapter | None:
     """
     Get appropriate adapter for a URL.
 
@@ -34,7 +33,7 @@ def register_adapter(adapter: SiteAdapter) -> None:
     Args:
         adapter: SiteAdapter instance to register
     """
-    ADAPTERS.append(adapter)
+    ADAPTERS.append(adapter)  # type: ignore[arg-type]
 
 
 def list_supported_sites() -> list[str]:

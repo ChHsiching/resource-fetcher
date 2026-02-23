@@ -6,10 +6,9 @@ This script builds a standalone executable using PyInstaller.
 Run locally to test the build process before pushing to GitHub.
 """
 
-import os
-import sys
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -67,7 +66,7 @@ def run_tests() -> None:
     """Run tests before building."""
     print("Running tests...")
     run_command([sys.executable, "-m", "pytest", "tests/", "-v"])
-    print("✅ All tests passed!")
+    print("[OK] All tests passed!")
 
 
 def main() -> None:
@@ -91,7 +90,7 @@ def main() -> None:
     build_binary()
 
     print("\n" + "=" * 60)
-    print("✅ Build completed successfully!")
+    print("[OK] Build completed successfully!")
     print("=" * 60)
     print("\nTo test the binary:")
     if sys.platform == "win32":

@@ -1,7 +1,10 @@
 """Unit tests for HTTP utility functions."""
 
-import pytest
-from resource_fetcher.utils.http import fix_mojibake, extract_filename_from_headers, sanitize_filename
+from resource_fetcher.utils.http import (
+    extract_filename_from_headers,
+    fix_mojibake,
+    sanitize_filename,
+)
 
 
 class TestFixMojibake:

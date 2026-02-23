@@ -1,7 +1,6 @@
 """Test models for music downloader."""
 
-import pytest
-from resource_fetcher.core.models import Song, Album, DownloadStatus, DownloadResult
+from resource_fetcher.core.models import Album, DownloadResult, DownloadStatus, Song
 
 
 class TestSong:
@@ -65,7 +64,10 @@ class TestAlbum:
 
     def test_album_song_count(self):
         """Test getting the number of songs in an album."""
-        songs = [Song(id=str(i), title=f"Song {i}", url=f"http://example.com/{i}.mp3") for i in range(100)]
+        songs = [
+            Song(id=str(i), title=f"Song {i}", url=f"http://example.com/{i}.mp3")
+            for i in range(100)
+        ]
 
         album = Album(
             title="Test Album",

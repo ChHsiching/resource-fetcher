@@ -1,6 +1,7 @@
 """Test SiteAdapter interface contract."""
 
 import pytest
+
 from resource_fetcher.core.interfaces import SiteAdapter
 from resource_fetcher.core.models import Album
 

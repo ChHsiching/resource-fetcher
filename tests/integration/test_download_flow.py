@@ -1,9 +1,9 @@
 """Integration tests for complete download flow."""
 
-import pytest
-from pathlib import Path
 import tempfile
-import shutil
+from pathlib import Path
+
+import pytest
 
 from resource_fetcher.adapters.izanmei import IzanmeiAdapter
 from resource_fetcher.cli.main import download_song

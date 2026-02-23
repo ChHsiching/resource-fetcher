@@ -1,6 +1,7 @@
 """Abstract interface for site adapters."""
 
 from abc import ABC, abstractmethod
+
 from resource_fetcher.core.models import Album
 
 

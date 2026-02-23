@@ -1,6 +1,7 @@
 """Test IzanmeiAdapter for izanmei.cc website."""
 
 import pytest
+
 from resource_fetcher.adapters.izanmei import IzanmeiAdapter
 
 
@@ -68,5 +69,5 @@ def sample_izanmei_html():
         "html",
         "izanmei_album.html"
     )
-    with open(fixture_path, "r", encoding="utf-8") as f:
+    with open(fixture_path, encoding="utf-8") as f:
         return f.read()

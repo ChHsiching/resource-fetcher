@@ -1,6 +1,7 @@
 """IzanmeiAdapter for izanmei.cc website."""
 
 import re
+
 from resource_fetcher.core.interfaces import SiteAdapter
 from resource_fetcher.core.models import Album, Song
 
@@ -62,7 +63,8 @@ class IzanmeiAdapter(SiteAdapter):
 
         # Extract songs with track numbers using regex
         # Strategy: extract track numbers from <td class="i"> and song links separately
-        # Pattern: <td class="i" style='width:58px;'>第101首</td> appears before <a href="/song/16975.html">
+        # Pattern: <td class="i" style='width:58px;'>第101首</td> appears before
+        # <a href="/song/16975.html">
 
         # Extract track numbers ONLY from <td class="i"> tags to avoid false matches
         # Use DOTALL flag to match across newlines, and handle whitespace
@@ -84,9 +86,12 @@ class IzanmeiAdapter(SiteAdapter):
             matches = re.findall(pattern, html)
             if matches:
                 # Generate track numbers sequentially
-                song_entries = [(str(i), song_id, title) for i, (song_id, title) in enumerate(matches, 1)]
+                song_entries = [
+                    (str(i), song_id, title)
+                    for i, (song_id, title) in enumerate(matches, 1)
+                ]
             else:
-                raise ValueError(f"No songs found in HTML")
+                raise ValueError("No songs found in HTML")
 
         if not song_entries:
             # Fallback: try without track numbers (for old format pages)
@@ -94,9 +99,12 @@ class IzanmeiAdapter(SiteAdapter):
             matches = re.findall(pattern, html)
             if matches:
                 # Generate track numbers sequentially
-                song_entries = [(str(i), song_id, title) for i, (song_id, title) in enumerate(matches, 1)]
+                song_entries = [
+                    (str(i), song_id, title)
+                    for i, (song_id, title) in enumerate(matches, 1)
+                ]
             else:
-                raise ValueError(f"No songs found in HTML")
+                raise ValueError("No songs found in HTML")
 
         # Construct song objects with track numbers
         songs = []

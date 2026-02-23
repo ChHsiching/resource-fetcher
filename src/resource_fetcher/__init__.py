@@ -7,6 +7,6 @@ from various websites.
 
 __version__ = "0.1.0"
 
-from resource_fetcher.core.models import Song, Album
+from resource_fetcher.core.models import Album, Song
 
 __all__ = ["Song", "Album", "__version__"]
