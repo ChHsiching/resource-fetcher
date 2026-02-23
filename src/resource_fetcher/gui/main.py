@@ -38,47 +38,13 @@ def main() -> int:
             return 1
 
         # Import GUI components
-        from resource_fetcher.gui.core.cli_wrapper import CLIWrapper
-        from resource_fetcher.gui.core.config_service import ConfigService
-        from resource_fetcher.gui.core.output_parser import OutputParser, SongProgress
+        from resource_fetcher.gui.widgets.main_window import MainWindow
 
-        logger.info("Core services imported successfully")
+        logger.info("GUI widgets imported successfully")
 
-        # Test services
-        print("Testing GUI core services...")
-
-        # Test ConfigService
-        config_service = ConfigService()
-        config = config_service.load_config()
-        print(f"[OK] ConfigService: output_dir={config.output_dir}, timeout={config.timeout}")
-
-        # Test CLIWrapper (check if CLI exists)
-        cli_path = Path("dist/resource-fetcher.exe")
-        if sys.platform != "win32":
-            cli_path = Path("dist/resource-fetcher")
-
-        if cli_path.exists():
-            CLIWrapper(cli_path)
-            print(f"[OK] CLIWrapper: CLI found at {cli_path}")
-        else:
-            print(f"[WARN] CLIWrapper: CLI not found at {cli_path} (will be available after build)")
-
-        # Test OutputParser
-        parser = OutputParser()
-        test_line = "[5/10] 圣哉三一歌"
-        result = parser.parse_line(test_line)
-        if isinstance(result, SongProgress):
-            print(f"[OK] OutputParser: Parsed [{result.index}/{result.total}] {result.title}")
-
-        print("\n" + "=" * 60)
-        print("All core services are working correctly!")
-        print("=" * 60)
-        print("\nNote: Full GUI interface will be implemented in the next phase.")
-        print("Current phase: Core services foundation (Phase 1)")
-        print("\nNext steps:")
-        print("  1. Implement MainWindow and widgets (Phase 2)")
-        print("  2. Add progress display (Phase 3)")
-        print("  3. Integrate complete workflow (Phase 4)")
+        # Create and run main window
+        app = MainWindow(theme="cosmo")
+        app.run()
 
         return 0
 
