@@ -39,22 +39,29 @@ jobs:
           python-version: '3.10'
 
       - name: Install Poetry
+        shell: bash
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            echo "$APPDATA\Python\Scripts" >> $GITHUB_PATH
+          else
+            echo "$HOME/.local/bin" >> $GITHUB_PATH
+          fi
 
       - name: Install dependencies
+        shell: bash
         run: |
           poetry install
           poetry run pip install pyinstaller
 
       - name: Run tests
+        shell: bash
         run: poetry run pytest tests/ -v
 
       - name: Build binary with PyInstaller
+        shell: bash
         run: |
           poetry run pyinstaller --onefile --name resource-fetcher${{ matrix.binary_ext }} src/resource_fetcher/cli/main.py
-        shell: bash
 
       - name: Upload artifact (Linux/macOS)
         if: runner.os != 'Windows'
