@@ -1,11 +1,11 @@
 """
-Resource Fetcher - Universal resource fetching framework.
+Resource Fetcher GUI - Graphical interface for batch downloads.
 
-This package provides an extensible architecture for batch downloading resources
-from various websites.
+This package provides the modern GUI for the Resource Fetcher framework,
+built with ttkbootstrap.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 from resource_fetcher_core.core.models import Album, Song
 
