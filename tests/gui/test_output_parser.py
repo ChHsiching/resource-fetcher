@@ -14,9 +14,7 @@ class TestSongProgress:
 
     def test_default_values(self) -> None:
         """Test default song progress values."""
-        progress = SongProgress(
-            index=1, total=10, title="Test Song", status="downloading"
-        )
+        progress = SongProgress(index=1, total=10, title="Test Song", status="downloading")
 
         assert progress.index == 1
         assert progress.total == 10
@@ -178,6 +176,7 @@ class TestOutputParser:
 
         # Verify they are compiled regex objects
         import re
+
         for pattern in parser._compiled_patterns.values():
             assert isinstance(pattern, re.Pattern)
 

@@ -43,4 +43,4 @@ def list_supported_sites() -> list[str]:
     Returns:
         List of supported website names
     """
-    return [adapter.__class__.__name__.replace('Adapter', '') for adapter in ADAPTERS]
+    return [adapter.__class__.__name__.replace("Adapter", "") for adapter in ADAPTERS]
