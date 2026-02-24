@@ -12,7 +12,7 @@ class TestSong:
             id="16875",
             title="圣哉三一歌",
             url="https://play.xiaoh.ai/song/p/16875.mp3",
-            metadata={"source": "izanmei.cc"}
+            metadata={"source": "izanmei.cc"},
         )
 
         assert song.id == "16875"
@@ -22,11 +22,7 @@ class TestSong:
 
     def test_create_song_without_metadata(self):
         """Test creating a Song without metadata (should default to empty dict)."""
-        song = Song(
-            id="16876",
-            title="三一来临歌",
-            url="https://play.xiaoh.ai/song/p/16876.mp3"
-        )
+        song = Song(id="16876", title="三一来临歌", url="https://play.xiaoh.ai/song/p/16876.mp3")
 
         assert song.metadata == {}
 
@@ -54,7 +50,7 @@ class TestAlbum:
             title="新编赞美诗442首(001-100)",
             url="https://www.izanmei.cc/album/hymns-442-1.html",
             songs=songs,
-            source="izanmei.cc"
+            source="izanmei.cc",
         )
 
         assert album.title == "新编赞美诗442首(001-100)"
@@ -70,22 +66,14 @@ class TestAlbum:
         ]
 
         album = Album(
-            title="Test Album",
-            url="https://example.com/album",
-            songs=songs,
-            source="test"
+            title="Test Album", url="https://example.com/album", songs=songs, source="test"
         )
 
         assert len(album) == 100
 
     def test_empty_album(self):
         """Test creating an album with no songs."""
-        album = Album(
-            title="Empty Album",
-            url="https://example.com/empty",
-            songs=[],
-            source="test"
-        )
+        album = Album(title="Empty Album", url="https://example.com/empty", songs=[], source="test")
 
         assert len(album) == 0
         assert album.songs == []
@@ -98,9 +86,9 @@ class TestDownloadResult:
         """Test creating a successful download result."""
         result = DownloadResult(
             status=DownloadStatus.SUCCESS,
-            path= "path/to/song.mp3",
+            path="path/to/song.mp3",
             size=1024000,
-            message="Download successful"
+            message="Download successful",
         )
 
         assert result.status == DownloadStatus.SUCCESS
@@ -111,11 +99,7 @@ class TestDownloadResult:
 
     def test_failed_result(self):
         """Test creating a failed download result."""
-        result = DownloadResult(
-            status=DownloadStatus.FAILED,
-            path=None,
-            message="Network error"
-        )
+        result = DownloadResult(status=DownloadStatus.FAILED, path=None, message="Network error")
 
         assert result.status == DownloadStatus.FAILED
         assert result.path is None
@@ -127,7 +111,7 @@ class TestDownloadResult:
         result = DownloadResult(
             status=DownloadStatus.SKIPPED,
             path="path/to/existing.mp3",
-            message="File already exists"
+            message="File already exists",
         )
 
         assert result.status == DownloadStatus.SKIPPED
@@ -136,15 +120,9 @@ class TestDownloadResult:
 
     def test_is_failed_method(self):
         """Test the is_failed helper method."""
-        failed_result = DownloadResult(
-            status=DownloadStatus.FAILED,
-            path=None,
-            message="Error"
-        )
+        failed_result = DownloadResult(status=DownloadStatus.FAILED, path=None, message="Error")
         success_result = DownloadResult(
-            status=DownloadStatus.SUCCESS,
-            path="path.mp3",
-            message="OK"
+            status=DownloadStatus.SUCCESS, path="path.mp3", message="OK"
         )
 
         assert failed_result.is_failed()

@@ -62,12 +62,9 @@ class TestIzanmeiAdapter:
 def sample_izanmei_html():
     """Load sample HTML from fixture file."""
     import os
+
     fixture_path = os.path.join(
-        os.path.dirname(__file__),
-        "..",
-        "fixtures",
-        "html",
-        "izanmei_album.html"
+        os.path.dirname(__file__), "..", "fixtures", "html", "izanmei_album.html"
     )
     with open(fixture_path, encoding="utf-8") as f:
         return f.read()

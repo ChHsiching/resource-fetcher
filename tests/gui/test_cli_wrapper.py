@@ -233,9 +233,7 @@ class TestCLIWrapper:
         def complete_callback(exit_code: int) -> None:
             pass
 
-        wrapper.execute_download(
-            "http://example.com", config, progress_callback, complete_callback
-        )
+        wrapper.execute_download("http://example.com", config, progress_callback, complete_callback)
 
         # Wait for completion with short timeout
         result = wrapper.wait_for_completion(timeout=5)

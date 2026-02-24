@@ -54,8 +54,7 @@ class IzanmeiAdapter(SiteAdapter):
             # In real implementation, would fetch from URL here
             # For now, raise error to indicate URL fetching not implemented
             raise NotImplementedError(
-                "Direct URL fetching not implemented yet. "
-                "Use HTML string for testing."
+                "Direct URL fetching not implemented yet. " "Use HTML string for testing."
             )
 
         # Extract album title
@@ -87,8 +86,7 @@ class IzanmeiAdapter(SiteAdapter):
             if matches:
                 # Generate track numbers sequentially
                 song_entries = [
-                    (str(i), song_id, title)
-                    for i, (song_id, title) in enumerate(matches, 1)
+                    (str(i), song_id, title) for i, (song_id, title) in enumerate(matches, 1)
                 ]
             else:
                 raise ValueError("No songs found in HTML")
@@ -100,8 +98,7 @@ class IzanmeiAdapter(SiteAdapter):
             if matches:
                 # Generate track numbers sequentially
                 song_entries = [
-                    (str(i), song_id, title)
-                    for i, (song_id, title) in enumerate(matches, 1)
+                    (str(i), song_id, title) for i, (song_id, title) in enumerate(matches, 1)
                 ]
             else:
                 raise ValueError("No songs found in HTML")
@@ -117,16 +114,11 @@ class IzanmeiAdapter(SiteAdapter):
                 id=song_id,
                 title=formatted_title,
                 url=audio_url,
-                metadata={"source": "izanmei.cc", "track_number": track_num}
+                metadata={"source": "izanmei.cc", "track_number": track_num},
             )
             songs.append(song)
 
-        return Album(
-            title=album_title,
-            url=page_url,
-            songs=songs,
-            source="izanmei.cc"
-        )
+        return Album(title=album_title, url=page_url, songs=songs, source="izanmei.cc")
 
     def _extract_album_title(self, html: str) -> str:
         """
@@ -138,7 +130,7 @@ class IzanmeiAdapter(SiteAdapter):
         Returns:
             Album title or "未知专辑" if not found
         """
-        match = re.search(r'<h1[^>]*>([^<]+)</h1>', html)
+        match = re.search(r"<h1[^>]*>([^<]+)</h1>", html)
         if match:
             return match.group(1).strip()
         return "未知专辑"

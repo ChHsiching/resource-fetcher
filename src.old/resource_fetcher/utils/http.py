@@ -24,7 +24,7 @@ def fix_mojibake(filename: str) -> str:
     """
     try:
         # Try to fix: encode as latin-1 to get original bytes, then decode as UTF-8
-        return filename.encode('latin-1').decode('utf-8')
+        return filename.encode("latin-1").decode("utf-8")
     except (UnicodeEncodeError, UnicodeDecodeError):
         # Not mojibake, return as-is
         return filename
@@ -65,7 +65,7 @@ def extract_filename_from_headers(headers: dict, song_id: str = "", song_title: 
     if match:
         filename = match.group(1)
         # URL decode if needed
-        if '%' in filename:
+        if "%" in filename:
             filename = unquote(filename)
         # Fix mojibake if present (UTF-8 bytes interpreted as latin-1)
         filename = fix_mojibake(filename)

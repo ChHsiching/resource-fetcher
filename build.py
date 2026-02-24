@@ -45,7 +45,8 @@ def build_binary() -> None:
     pyinstaller_cmd = [
         "pyinstaller",
         "--onefile",  # Create single executable
-        "--name", binary_name,
+        "--name",
+        binary_name,
         "--clean",  # Clean cache before building
         "packages/resource-fetcher-cli/src/resource_fetcher_cli/cli/main.py",
     ]

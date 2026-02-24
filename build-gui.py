@@ -48,9 +48,11 @@ def build_cli() -> None:
         "run",
         "pyinstaller",
         "--onefile",
-        "--name", binary_name,
+        "--name",
+        binary_name,
         "--clean",
-        "--distpath", "dist",
+        "--distpath",
+        "dist",
         "src/resource_fetcher/cli/main.py",
     ]
 
@@ -85,13 +87,18 @@ def build_gui() -> None:
         "run",
         "pyinstaller",
         "--onefile",
-        "--name", binary_name,
+        "--name",
+        binary_name,
         "--windowed",  # No console window for GUI
         "--clean",
-        "--distpath", "dist",
-        "--hidden-import", "tkinter",
-        "--hidden-import", "ttkbootstrap",
-        "--hidden-import", "pyperclip",
+        "--distpath",
+        "dist",
+        "--hidden-import",
+        "tkinter",
+        "--hidden-import",
+        "ttkbootstrap",
+        "--hidden-import",
+        "pyperclip",
         "src/resource_fetcher/gui/main.py",
     ]
 

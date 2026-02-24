@@ -6,28 +6,56 @@ Universal resource fetching framework with extensible adapter architecture for d
 ## Project Structure
 ```
 resource-fetcher/
-├── src/resource_fetcher/
-│   ├── adapters/         # Site-specific download adapters
-│   ├── cli/              # Command-line interface
-│   ├── core/             # Core interfaces and models
-│   └── utils/            # HTTP utilities
-├── tests/
+├── packages/              # Poetry Workspace packages
+│   ├── resource-fetcher-core/    # Core library
+│   ├── resource-fetcher-cli/     # CLI tool
+│   └── resource-fetcher-gui/     # GUI tool
+├── tests/                 # All tests
 │   ├── unit/             # Unit tests
 │   ├── integration/      # Integration tests
-│   └── fixtures/         # Test fixtures
-├── docs/                 # Project documentation
+│   └── gui/              # GUI tests
+├── .venv/                 # Python virtual environment
 ├── .github/              # CI/CD workflows
-└── build.py              # PyInstaller build script
+└── WORKSPACE.md           # Workspace migration guide
+```
+
+## Environment Setup
+
+**IMPORTANT**: This project uses **Python venv** (not Poetry) for dependency management.
+
+### Virtual Environment
+
+The project uses `.venv/` virtual environment at the repository root.
+
+**Activate venv**:
+```bash
+# Windows
+.venv\Scripts\activate
+
+# Linux/macOS
+source .venv/bin/activate
+```
+
+**Install dependencies**:
+```bash
+pip install -e .
+# Or for workspace (if Poetry is available)
+pip install -e ./packages/resource-fetcher-core
+pip install -e ./packages/resource-fetcher-cli
+pip install -e ./packages/resource-fetcher-gui
 ```
 
 ## Common Commands
-- **Install**: `poetry install`
-- **Run**: `poetry run python -m resource_fetcher.cli.main`
-- **Test**: `poetry run pytest`
-- **Lint**: `poetry run ruff check .`
-- **Format**: `poetry run ruff format .`
-- **Type check**: `poetry run mypy src/`
-- **Build**: `python build.py`
+
+**Always run from repository root with venv activated**:
+
+- **Install dependencies**: `pip install -r requirements.txt` (if available)
+- **Run tests**: `pytest tests/ -v`
+- **Run specific test**: `pytest tests/unit/test_http.py -v`
+- **Lint check**: `ruff check .`
+- **Format code**: `ruff format .`
+- **Type check**: `mypy packages/`
+- **Build CLI**: `python build.py` (may need updates for workspace)
 
 ## Tech Stack
 - Python 3.10+

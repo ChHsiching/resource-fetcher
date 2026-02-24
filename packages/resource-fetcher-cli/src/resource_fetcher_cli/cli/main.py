@@ -15,11 +15,8 @@ from resource_fetcher_core.core.models import DownloadResult, DownloadStatus
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('downloader.log', encoding='utf-8'),
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("downloader.log", encoding="utf-8"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -58,7 +55,7 @@ class DownloadProgress:
             f"  总计 (Total): {self.total}",
             f"  耗时 (Time): {elapsed:.1f} 秒",
             f"  速度 (Speed): {speed:.2f} 首/秒" if speed > 0 else "  速度 (Speed): N/A",
-            "=" * 60
+            "=" * 60,
         ]
         return "\n".join(lines)
 
@@ -99,7 +96,11 @@ def download_song(
             response.raise_for_status()
 
             # Get filename from headers or use title
-            from resource_fetcher_core.utils.http import extract_filename_from_headers, sanitize_filename
+            from resource_fetcher_core.utils.http import (
+                extract_filename_from_headers,
+                sanitize_filename,
+            )
+
             filename = extract_filename_from_headers(dict(response.headers), song_id, song_title)
             filename = sanitize_filename(filename)
             output_path = output_dir / filename
@@ -108,9 +109,7 @@ def download_song(
             if output_path.exists() and not overwrite:
                 logger.info(f"File exists, skipping: {filename}")
                 return DownloadResult(
-                    status=DownloadStatus.SKIPPED,
-                    path=output_path,
-                    message="File already exists"
+                    status=DownloadStatus.SKIPPED, path=output_path, message="File already exists"
                 )
 
             # Download with progress tracking
@@ -141,7 +140,7 @@ def download_song(
                 status=DownloadStatus.SUCCESS,
                 path=output_path,
                 size=downloaded_size,
-                message="Download successful"
+                message="Download successful",
             )
 
         except requests.exceptions.RequestException as e:
@@ -149,21 +148,17 @@ def download_song(
             if attempt == retries - 1:
                 logger.error(f"Failed to download after {retries} attempts: {url}")
                 return DownloadResult(
-                    status=DownloadStatus.FAILED,
-                    path=None,
-                    message=f"Download failed: {str(e)}"
+                    status=DownloadStatus.FAILED, path=None, message=f"Download failed: {str(e)}"
                 )
             # Exponential backoff
-            wait_time = 2 ** attempt
+            wait_time = 2**attempt
             logger.info(f"Retrying in {wait_time} seconds...")
             time.sleep(wait_time)
 
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
             return DownloadResult(
-                status=DownloadStatus.FAILED,
-                path=None,
-                message=f"Error: {str(e)}"
+                status=DownloadStatus.FAILED, path=None, message=f"Error: {str(e)}"
             )
 
     return DownloadResult(status=DownloadStatus.FAILED, message="Unknown error")
@@ -176,7 +171,7 @@ def download_album(
     overwrite: bool = False,
     timeout: int = 60,
     retries: int = 3,
-    delay: float = 0.5
+    delay: float = 0.5,
 ) -> bool:
     """
     Download an entire album.
@@ -197,7 +192,7 @@ def download_album(
         # Fetch album page
         logger.info(f"Fetching album page: {url}")
         response = requests.get(url, timeout=30)
-        response.encoding = 'utf-8'
+        response.encoding = "utf-8"
         html = response.text
 
         # Get appropriate adapter
@@ -242,7 +237,7 @@ def download_album(
                 song_title=song.title,
                 timeout=timeout,
                 retries=retries,
-                overwrite=overwrite
+                overwrite=overwrite,
             )
 
             # Update progress
@@ -267,9 +262,9 @@ def download_album(
 def create_parser() -> argparse.ArgumentParser:
     """Create CLI argument parser."""
     parser = argparse.ArgumentParser(
-        prog='resource-fetcher',
-        description='Resource Fetcher - Batch download resources from various websites',
-        epilog='''
+        prog="resource-fetcher",
+        description="Resource Fetcher - Batch download resources from various websites",
+        epilog="""
 Examples:
   # Download entire album
   %(prog)s --url https://www.izanmei.cc/album/hymns-442-1.html
@@ -287,70 +282,60 @@ Examples:
   %(prog)s --url https://www.izanmei.cc/album/hymns-442-1.html --timeout 120 --retries 5
 
 For more information, visit: https://github.com/ChHsiching/resource-fetcher
-        ''',
-        formatter_class=argparse.RawDescriptionHelpFormatter
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    parser.add_argument("--url", required=True, help="Album page URL to download")
+
+    parser.add_argument(
+        "--output",
+        "-o",
+        default="./downloads",
+        help="Output directory for downloaded songs (default: ./downloads)",
     )
 
     parser.add_argument(
-        '--url',
-        required=True,
-        help='Album page URL to download'
-    )
-
-    parser.add_argument(
-        '--output', '-o',
-        default='./downloads',
-        help='Output directory for downloaded songs (default: ./downloads)'
-    )
-
-    parser.add_argument(
-        '--limit', '-l',
+        "--limit",
+        "-l",
         type=int,
-        metavar='N',
-        help='Limit number of songs to download (e.g., --limit 10 for first 10 songs)'
+        metavar="N",
+        help="Limit number of songs to download (e.g., --limit 10 for first 10 songs)",
     )
 
     parser.add_argument(
-        '--overwrite',
-        action='store_true',
-        help='Overwrite existing files instead of skipping them'
+        "--overwrite", action="store_true", help="Overwrite existing files instead of skipping them"
     )
 
     parser.add_argument(
-        '--timeout',
+        "--timeout",
         type=int,
         default=60,
-        metavar='SECONDS',
-        help='Request timeout in seconds (default: 60)'
+        metavar="SECONDS",
+        help="Request timeout in seconds (default: 60)",
     )
 
     parser.add_argument(
-        '--retries',
+        "--retries",
         type=int,
         default=3,
-        metavar='N',
-        help='Number of retry attempts for failed downloads (default: 3)'
+        metavar="N",
+        help="Number of retry attempts for failed downloads (default: 3)",
     )
 
     parser.add_argument(
-        '--delay',
+        "--delay",
         type=float,
         default=0.5,
-        metavar='SECONDS',
-        help='Delay between downloads in seconds (default: 0.5)'
+        metavar="SECONDS",
+        help="Delay between downloads in seconds (default: 0.5)",
     )
 
     parser.add_argument(
-        '--verbose', '-v',
-        action='store_true',
-        help='Enable verbose output for debugging'
+        "--verbose", "-v", action="store_true", help="Enable verbose output for debugging"
     )
 
-    parser.add_argument(
-        '--version',
-        action='version',
-        version='%(prog)s 1.0.0'
-    )
+    parser.add_argument("--version", action="version", version="%(prog)s 1.0.0")
 
     return parser
 
@@ -366,7 +351,7 @@ def main() -> None:
         logger.debug("Verbose mode enabled")
 
     # Validate URL
-    if not args.url.startswith('http'):
+    if not args.url.startswith("http"):
         parser.error(f"Invalid URL: {args.url}")
 
     # Convert output to Path
@@ -380,7 +365,7 @@ def main() -> None:
         overwrite=args.overwrite,
         timeout=args.timeout,
         retries=args.retries,
-        delay=args.delay
+        delay=args.delay,
     )
 
     # Exit with appropriate code

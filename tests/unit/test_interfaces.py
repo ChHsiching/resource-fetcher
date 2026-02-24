@@ -21,12 +21,7 @@ class TestSiteAdapterInterface:
             """Incomplete adapter missing can_handle."""
 
             def extract_album(self, url: str) -> Album:
-                return Album(
-                    title="Test",
-                    url=url,
-                    songs=[],
-                    source="test"
-                )
+                return Album(title="Test", url=url, songs=[], source="test")
 
         with pytest.raises(TypeError):
             ConcreteAdapter()
@@ -53,12 +48,7 @@ class TestSiteAdapterInterface:
                 return "example.com" in url
 
             def extract_album(self, url: str) -> Album:
-                return Album(
-                    title="Test Album",
-                    url=url,
-                    songs=[],
-                    source="example.com"
-                )
+                return Album(title="Test Album", url=url, songs=[], source="example.com")
 
         adapter = ConcreteAdapter()
         assert adapter.can_handle("https://example.com/album") is True

@@ -43,9 +43,7 @@ class ConfigWidget(ttk.LabelFrame):
         right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Output directory
-        ttk.Label(left_frame, text="Output Directory:").grid(
-            row=0, column=0, sticky=tk.W, pady=2
-        )
+        ttk.Label(left_frame, text="Output Directory:").grid(row=0, column=0, sticky=tk.W, pady=2)
         output_frame = ttk.Frame(left_frame)
         output_frame.grid(row=1, column=0, sticky=tk.EW, pady=(0, 10))
 
@@ -65,16 +63,12 @@ class ConfigWidget(ttk.LabelFrame):
         ttk.Label(left_frame, text="Download Limit (optional):").grid(
             row=2, column=0, sticky=tk.W, pady=2
         )
-        self.limit_var = tk.StringVar(
-            value=str(self._config.limit) if self._config.limit else ""
-        )
+        self.limit_var = tk.StringVar(value=str(self._config.limit) if self._config.limit else "")
         limit_entry = ttk.Entry(left_frame, textvariable=self.limit_var, width=15)
         limit_entry.grid(row=3, column=0, sticky=tk.W, pady=(0, 10))
 
         # Timeout
-        ttk.Label(left_frame, text="Timeout (seconds):").grid(
-            row=4, column=0, sticky=tk.W, pady=2
-        )
+        ttk.Label(left_frame, text="Timeout (seconds):").grid(row=4, column=0, sticky=tk.W, pady=2)
         self.timeout_var = tk.IntVar(value=self._config.timeout)
         timeout_spinbox = ttk.Spinbox(
             left_frame,
@@ -86,9 +80,7 @@ class ConfigWidget(ttk.LabelFrame):
         timeout_spinbox.grid(row=5, column=0, sticky=tk.W, pady=(0, 10))
 
         # Retries
-        ttk.Label(left_frame, text="Retries:").grid(
-            row=6, column=0, sticky=tk.W, pady=2
-        )
+        ttk.Label(left_frame, text="Retries:").grid(row=6, column=0, sticky=tk.W, pady=2)
         self.retries_var = tk.IntVar(value=self._config.retries)
         retries_spinbox = ttk.Spinbox(
             left_frame,
@@ -100,9 +92,7 @@ class ConfigWidget(ttk.LabelFrame):
         retries_spinbox.grid(row=7, column=0, sticky=tk.W, pady=(0, 10))
 
         # Delay
-        ttk.Label(right_frame, text="Delay (seconds):").grid(
-            row=0, column=0, sticky=tk.W, pady=2
-        )
+        ttk.Label(right_frame, text="Delay (seconds):").grid(row=0, column=0, sticky=tk.W, pady=2)
         self.delay_var = tk.DoubleVar(value=self._config.delay)
         delay_spinbox = ttk.Spinbox(
             right_frame,

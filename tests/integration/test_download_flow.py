@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from resource_fetcher_core.adapters.izanmei import IzanmeiAdapter
 from resource_fetcher_cli.cli.main import download_song
+from resource_fetcher_core.adapters.izanmei import IzanmeiAdapter
 from resource_fetcher_core.core.models import DownloadStatus
 
 
@@ -19,8 +19,9 @@ class TestIzanmeiAdapterIntegration:
 
         # Use real HTML from the website
         import requests
+
         response = requests.get("https://www.izanmei.cc/album/hymns-442-1.html", timeout=30)
-        response.encoding = 'utf-8'
+        response.encoding = "utf-8"
         html = response.text
 
         album = adapter.extract_album(html)
@@ -62,10 +63,7 @@ class TestDownloadFlowIntegration:
         with tempfile.TemporaryDirectory() as tmpdir:
             url = "https://play.xiaoh.ai/song/p/16875.mp3"
             result = download_song(
-                url=url,
-                output_dir=Path(tmpdir),
-                song_id="16875",
-                song_title="圣哉三一歌"
+                url=url, output_dir=Path(tmpdir), song_id="16875", song_title="圣哉三一歌"
             )
 
             # Verify download success
@@ -95,10 +93,7 @@ class TestDownloadFlowIntegration:
             expected_files = []
             for song_id, title, url in songs:
                 result = download_song(
-                    url=url,
-                    output_dir=Path(tmpdir),
-                    song_id=song_id,
-                    song_title=title
+                    url=url, output_dir=Path(tmpdir), song_id=song_id, song_title=title
                 )
                 assert result.status == DownloadStatus.SUCCESS
                 expected_filename = f"{title}.mp3"
@@ -120,19 +115,13 @@ class TestDownloadFlowIntegration:
 
             # First download
             result1 = download_song(
-                url=url,
-                output_dir=Path(tmpdir),
-                song_id=song_id,
-                song_title=song_title
+                url=url, output_dir=Path(tmpdir), song_id=song_id, song_title=song_title
             )
             assert result1.status == DownloadStatus.SUCCESS
 
             # Second download should skip
             result2 = download_song(
-                url=url,
-                output_dir=Path(tmpdir),
-                song_id=song_id,
-                song_title=song_title
+                url=url, output_dir=Path(tmpdir), song_id=song_id, song_title=song_title
             )
             assert result2.status == DownloadStatus.SKIPPED
             assert "exists" in result2.message.lower()
@@ -145,10 +134,7 @@ class TestDownloadFlowIntegration:
             url = "https://play.xiaoh.ai/song/p/16875.mp3"
 
             result = download_song(
-                url=url,
-                output_dir=Path(tmpdir),
-                song_id="16875",
-                song_title="圣哉三一歌"
+                url=url, output_dir=Path(tmpdir), song_id="16875", song_title="圣哉三一歌"
             )
 
             # The filename should be correct Chinese, not mojibake
@@ -168,8 +154,9 @@ class TestEndToEndAlbumDownload:
 
             # Fetch album
             import requests
+
             response = requests.get("https://www.izanmei.cc/album/hymns-442-1.html", timeout=30)
-            response.encoding = 'utf-8'
+            response.encoding = "utf-8"
             html = response.text
             album = adapter.extract_album(html)
 
@@ -178,10 +165,7 @@ class TestEndToEndAlbumDownload:
             results = []
             for song in first_5:
                 result = download_song(
-                    url=song.url,
-                    output_dir=Path(tmpdir),
-                    song_id=song.id,
-                    song_title=song.title
+                    url=song.url, output_dir=Path(tmpdir), song_id=song.id, song_title=song.title
                 )
                 results.append(result)
 
@@ -212,12 +196,10 @@ class TestEndToEndAlbumDownload:
             for song_id, expected_size in known_sizes.items():
                 url = f"https://play.xiaoh.ai/song/p/{song_id}.mp3"
                 result = download_song(
-                    url=url,
-                    output_dir=Path(tmpdir),
-                    song_id=song_id,
-                    song_title=f"Song{song_id}"
+                    url=url, output_dir=Path(tmpdir), song_id=song_id, song_title=f"Song{song_id}"
                 )
 
                 assert result.status == DownloadStatus.SUCCESS
-                assert result.size == expected_size, \
-                    f"File size mismatch for {song_id}: expected {expected_size}, got {result.size}"
+                assert (
+                    result.size == expected_size
+                ), f"File size mismatch for {song_id}: expected {expected_size}, got {result.size}"
