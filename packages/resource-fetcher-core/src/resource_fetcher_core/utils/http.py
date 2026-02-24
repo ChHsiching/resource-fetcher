@@ -89,3 +89,37 @@ def sanitize_filename(filename: str) -> str:
     illegal_chars = r'[\\/:*?"<>|]'
     clean_name = re.sub(illegal_chars, "_", filename)
     return clean_name.strip()
+
+
+def add_track_number_prefix(
+    filename: str, track_number: int | None = None, total_songs: int = 1
+) -> str:
+    """
+    Add leading zero prefix to filename for proper sorting.
+
+    Args:
+        filename: Original filename (e.g., "第1首 xxx.mp3")
+        track_number: Track number (if None, extract from filename)
+        total_songs: Total songs in album (determines padding)
+
+    Returns:
+        Filename with prefix (e.g., "001_第1首 xxx.mp3") or original if no track number found
+    """
+    # Extract track number from filename if not provided
+    if track_number is None:
+        match = re.search(r"第(\d+)首", filename)
+        if not match:
+            return filename  # No track number, return original
+        track_number = int(match.group(1))
+
+    # Determine padding based on total songs (dynamic: 1/2/3 digits)
+    if total_songs < 10:
+        padding = 1
+    elif total_songs < 100:
+        padding = 2
+    else:
+        padding = 3
+
+    # Add prefix with leading zeros
+    prefix = f"{track_number:0{padding}d}"
+    return f"{prefix}_{filename}"
