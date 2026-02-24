@@ -5,7 +5,7 @@ This package provides an extensible architecture for batch downloading resources
 from various websites.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 from resource_fetcher_core.core.models import Album, Song
 

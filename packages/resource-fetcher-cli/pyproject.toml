@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "resource-fetcher"
+name = "resource-fetcher-cli"
 version = "0.2.0"
 description = "CLI tool for resource-fetcher - batch download music albums"
 authors = ["ChHsiching <hsichingchang@gmail.com>"]
