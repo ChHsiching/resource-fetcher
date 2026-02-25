@@ -4,7 +4,7 @@ A flexible, extensible tool for batch downloading resources from websites.
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![Tests](https://img.shields.io/badge/Tests-111%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-133%20passing-brightgreen)
 
 ## Features
 
@@ -57,9 +57,48 @@ poetry install
 
 ## Quick Start
 
-### Using GUI (Recommended)
+This project offers **two** graphical user interfaces:
 
-1. Run `resource-fetcher-gui.exe` (or `poetry run python -m resource_fetcher_gui.gui.main` from source)
+### Option 1: Tauri GUI (Modern - Recommended)
+
+**Advantages**: Real-time progress streaming, light/dark theme toggle, better performance, smaller binary size
+
+```bash
+# Download from Releases
+resource-fetcher-tauri.exe   # Windows
+resource-fetcher-tauri      # Linux/macOS
+
+# Or from source (requires Node.js 18+)
+cd tauri-gui
+npm install
+npm run tauri dev
+```
+
+### Option 2: Python GUI (Legacy)
+
+**Advantages**: Pure Python (easier to modify), same language as CLI backend
+
+```bash
+# Download from Releases
+resource-fetcher-gui.exe    # Windows
+resource-fetcher-gui       # Linux/macOS
+
+# Or from source
+poetry run python -m resource_fetcher_gui.gui.main
+```
+
+**Which GUI should I use?**
+
+| Use Case | Recommended GUI |
+|----------|----------------|
+| General users | **Tauri GUI** (modern, faster) |
+| Developers modifying GUI | **Python GUI** (same language as CLI) |
+| Embedded scripting | **CLI only** (no GUI needed) |
+| Automation | **CLI only** (better for scripts) |
+
+### Basic Workflow
+
+1. Run your preferred GUI (Tauri or Python)
 2. Paste the album URL
 3. Configure options (output directory, limits, etc.)
 4. Click "Download"
@@ -114,17 +153,17 @@ resource-fetcher.exe --renumber-dir /path/to/songs
 
 ## Architecture
 
-This project uses a **frontend-backend separation** architecture:
+This project uses a **dual GUI architecture** with a shared CLI backend:
 
 ```
 ┌─────────────────────────────────────┐
-│         GUI Frontend                │
-│  (resource-fetcher-gui.exe)         │
-│                                     │
-│  - Modern ttkbootstrap interface   │
-│  - Real-time progress display       │
-│  - Configuration management         │
+│      Tauri GUI (Modern)             │
+│  Rust + React + TypeScript          │
+│  - Real-time progress streaming     │
+│  - Light/Dark theme toggle          │
+│  - Better performance               │
 └─────────────┬───────────────────────┘
+              │
               │ subprocess
               ▼
 ┌─────────────────────────────────────┐
@@ -134,14 +173,23 @@ This project uses a **frontend-backend separation** architecture:
 │  - Standalone command-line tool     │
 │  - Can be used independently        │
 │  - All download logic               │
+└─────────────▲───────────────────────┘
+              │
+              │ subprocess
+              │
+┌─────────────────────────────────────┐
+│      Python GUI (Legacy)            │
+│  Python + ttkbootstrap              │
+│  - Pure Python (easier to modify)   │
+│  - Same language as CLI             │
 └─────────────────────────────────────┘
 ```
 
 **Key Benefits:**
-- CLI and GUI are completely separate programs
-- CLI can be used independently in scripts/automation
-- GUI provides user-friendly interface via subprocess calls
-- Each can be maintained as separate subprojects
+- CLI is completely independent and can be used in scripts/automation
+- Two GUI options: Modern Tauri (recommended) or Legacy Python (easier to modify)
+- Both GUIs call CLI via subprocess, maintaining separation of concerns
+- Each component can be maintained independently
 
 ## Project Structure
 
@@ -156,7 +204,7 @@ resource-fetcher/
 │   ├── pyproject.toml      # CLI dependencies
 │   └── src/resource_fetcher_cli/
 │       └── cli/main.py     # CLI entry point
-├── gui/                    # GUI project (Poetry-managed)
+├── gui/                    # Python GUI project (Poetry-managed)
 │   ├── cli/                # CLI as backend component
 │   ├── pyproject.toml      # GUI dependencies
 │   └── src/resource_fetcher_gui/
@@ -164,12 +212,17 @@ resource-fetcher/
 │           ├── core/       # GUI services
 │           ├── widgets/    # UI components
 │           └── main.py     # GUI entry point
-├── tests/                  # All tests (111 total)
+├── tauri-gui/              # Tauri GUI project (Node.js)
+│   ├── src/                # React + TypeScript source
+│   ├── src-tauri/          # Rust backend
+│   ├── package.json        # Node.js dependencies
+│   └── tests/              # Vitest + Playwright tests
+├── tests/                  # All Python tests (111 total)
 │   ├── unit/             # 43 unit tests
 │   ├── integration/      # 25 integration tests
 │   └── gui/              # 43 GUI tests
 ├── .venv/                  # Python virtual environment
-├── build.py               # Build script for CLI & GUI
+├── build.py               # Build script for CLI & Python GUI
 └── pyproject.toml         # Root configuration
 ```
 
@@ -209,21 +262,76 @@ python build.py
 
 ## Testing
 
-The project has comprehensive test coverage with 111 tests:
+The project has comprehensive test coverage with **133 tests** (111 Python + 22 Tauri):
+
+### Python Tests (111 tests)
 
 ```bash
+# Run all Python tests
+poetry run pytest tests/ -v
+
 # Unit tests (43 tests)
 poetry run pytest tests/unit/ -v
 
 # Integration tests (25 tests)
 poetry run pytest tests/integration/ -v
 
-# GUI tests (43 tests)
+# Python GUI tests (43 tests)
 poetry run pytest tests/gui/ -v
 
 # Test coverage
 poetry run pytest tests/ --cov=cli/core/src --cov=cli/src --cov=gui/src
 ```
+
+### Tauri Tests (22 tests)
+
+```bash
+cd tauri-gui
+
+# Install dependencies
+npm install
+
+# Run Vitest unit tests (18 tests)
+npm test
+
+# Run Playwright E2E tests (4 tests)
+npm run test:e2e
+
+# Run all Tauri tests
+npm run test:all
+```
+
+**Test Breakdown**:
+- 43 Python unit tests
+- 25 Python integration tests
+- 43 Python GUI tests
+- 18 Tauri Vitest tests
+- 4 Tauri Playwright E2E tests
+
+See [`tests/README.md`](tests/README.md) for detailed testing documentation.
+
+## Local CI Testing with Act
+
+Test GitHub Actions workflows locally without pushing:
+
+```bash
+# Install Act
+brew install act           # macOS
+choco install act          # Windows
+curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash  # Linux
+
+# Run all workflows
+act
+
+# Run specific job
+act -j test-python
+act -j test-tauri
+
+# Use helper script
+./scripts/test-act.sh
+```
+
+**Note**: Act has limitations and cannot test all actions (e.g., release creation).
 
 ## Supported Sites
 
