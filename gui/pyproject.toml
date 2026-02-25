@@ -6,18 +6,22 @@ authors = ["ChHsiching <hsichingchang@gmail.com>"]
 readme = "README.md"
 license = "MIT"
 packages = [
-    { include = "resource_fetcher_gui", from = "src" }
+    { include = "resource_fetcher_gui", from = "src" },
+    { include = "resource_fetcher_cli", from = "cli/src" },
+    { include = "resource_fetcher_core", from = "cli/core/src" }
 ]
 
 [tool.poetry.dependencies]
 python = "~3.10"
-resource-fetcher-core = "^0.2.0"
+requests = "^2.31.0"
+beautifulsoup4 = "^4.12.0"
+lxml = "^5.1.0"
 ttkbootstrap = "^1.10.0"
 pillow = "^10.0.0"
 pyperclip = "^1.8.0"
 
 [tool.poetry.scripts]
-resource-fetcher-gui = "resource_fetcher_gui.main:main"
+resource-fetcher-gui = "resource_fetcher_gui.gui.main:main"
 
 [build-system]
 requires = ["poetry-core"]

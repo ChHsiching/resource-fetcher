@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "resource-fetcher"
+version = "0.2.0"
+description = "CLI tool for resource-fetcher - batch download music albums"
+authors = ["ChHsiching <hsichingchang@gmail.com>"]
+readme = "README.md"
+license = "MIT"
+packages = [
+    { include = "resource_fetcher_cli", from = "src" },
+    { include = "resource_fetcher_core", from = "core/src" }
+]
+
+[tool.poetry.dependencies]
+python = "~3.10"
+requests = "^2.31.0"
+beautifulsoup4 = "^4.12.0"
+lxml = "^5.1.0"
+
+[tool.poetry.scripts]
+resource-fetcher = "resource_fetcher_cli.cli.main:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
