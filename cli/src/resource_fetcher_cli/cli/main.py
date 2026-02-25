@@ -13,6 +13,19 @@ import requests
 from resource_fetcher_core.adapters.registry import get_adapter
 from resource_fetcher_core.core.models import DownloadResult, DownloadStatus
 
+# Import progress markers for GUI integration
+try:
+    from resource_fetcher_cli.cli.progress_markers import (
+        album_complete,
+        album_start,
+        error as emit_error,
+        song_complete,
+        song_start,
+    )
+    HAS_MARKERS = True
+except ImportError:
+    HAS_MARKERS = False
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -307,6 +320,10 @@ def download_album(
         print(f"输出目录 (Output): {output_dir}")
         print("=" * 60 + "\n")
 
+        # Emit album start event for GUI
+        if HAS_MARKERS:
+            album_start(album.title, album.source, len(songs))
+
         # Apply limit
         songs = album.songs[:limit] if limit else album.songs
         if limit:
@@ -322,6 +339,10 @@ def download_album(
                 print(f"[{idx}/{len(songs)}] {song.title}")
             except UnicodeEncodeError:
                 print(f"[{idx}/{len(songs)}] Downloading song {idx}...")
+
+            # Emit song start event for GUI
+            if HAS_MARKERS:
+                song_start(idx, len(songs), song.title)
 
             # Download song
             result = download_song(
@@ -339,6 +360,16 @@ def download_album(
             # Update progress
             progress.update(result)
 
+            # Emit song complete event for GUI
+            if HAS_MARKERS:
+                song_complete(
+                    idx,
+                    song.title,
+                    result.status.value,
+                    result.size or 0,
+                    result.message or "",
+                )
+
             # Small delay between downloads to be polite to the server
             if idx < len(songs):
                 time.sleep(delay)
@@ -346,12 +377,18 @@ def download_album(
         # Display summary
         print(progress.summary())
 
+        # Emit album complete event for GUI
+        if HAS_MARKERS:
+            album_complete(progress.success, progress.failed, progress.skipped, len(songs))
+
         # Return success status
         return progress.failed == 0
 
     except Exception as e:
         logger.error(f"Album download failed: {e}")
         print(f"\n错误: {e}")
+        if HAS_MARKERS:
+            emit_error(str(e))
         return False
 
 
