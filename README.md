@@ -33,14 +33,17 @@ No Python installation required.
 git clone https://github.com/ChHsiching/resource-fetcher.git
 cd resource-fetcher
 
-# Using Poetry (recommended)
-poetry install
+# Create virtual environment
+python -m venv .venv
 
-# Or using pip
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or venv\Scripts\activate  # Windows
-pip install -r requirements.txt
+# Activate (Windows)
+.venv\Scripts\activate
+
+# Activate (Linux/macOS)
+source .venv/bin/activate
+
+# Install dependencies
+pip install requests beautifulsoup4 lxml ttkbootstrap pillow pyperclip pytest
 ```
 
 ## Quick Start
@@ -64,15 +67,20 @@ resource-fetcher.exe --url https://example.com/album/123
 **From Source:**
 
 ```bash
-python -m resource_fetcher.cli.main --url https://example.com/album/123
+# Set PYTHONPATH first
+export PYTHONPATH="cli/core/src:cli/src"  # Linux/macOS
+set PYTHONPATH=cli/core/src;cli/src       # Windows
+
+# Run CLI
+python cli/src/resource_fetcher_cli/cli/main.py --url https://example.com/album/123
 ```
 
 **View All Options:**
 
 ```bash
 resource-fetcher.exe --help
-# or
-python -m resource_fetcher.cli.main --help
+# or from source:
+python cli/src/resource_fetcher_cli/cli/main.py --help
 ```
 
 ## Architecture
@@ -110,20 +118,64 @@ This project uses a **frontend-backend separation** architecture:
 
 - **Izanmei** (izanmei.cc) - Christian music albums
 
+## Project Structure
+
+```
+resource-fetcher/
+├── cli/                    # CLI project (standalone)
+│   ├── core/               # Core library
+│   │   └── src/resource_fetcher_core/
+│   │       ├── adapters/   # Site adapters
+│   │       ├── core/       # Interfaces & models
+│   │       └── utils/      # Utilities
+│   ├── pyproject.toml      # CLI dependencies
+│   └── src/resource_fetcher_cli/
+│       └── cli/main.py     # CLI entry point
+├── gui/                    # GUI project
+│   ├── cli/                # CLI as backend component
+│   ├── pyproject.toml      # GUI dependencies
+│   └── src/resource_fetcher_gui/
+│       └── gui/
+│           ├── core/       # GUI services
+│           ├── widgets/    # UI components
+│           └── main.py     # GUI entry point
+├── tests/                  # All tests
+│   ├── unit/              # Unit tests
+│   ├── integration/       # Integration tests
+│   └── gui/               # GUI tests
+├── .venv/                  # Python virtual environment
+├── build.py               # Build script for CLI & GUI
+└── pyproject.toml         # Root configuration
+```
+
 ## Development
 
 ```bash
+# Activate virtual environment
+.venv\Scripts\activate          # Windows
+source .venv/bin/activate       # Linux/macOS
+
+# Set PYTHONPATH
+export PYTHONPATH="cli/core/src:gui/cli/core/src:gui/src:cli/src"  # Linux/macOS
+set PYTHONPATH=cli/core/src;gui/cli/core/src;gui/src;cli/src       # Windows
+
 # Run tests
-poetry run pytest
+pytest tests/ -v
 
 # Lint code
-poetry run ruff check src/ tests/
+ruff check cli/ gui/
 
 # Type checking
-poetry run mypy src/
+mypy cli/
 
-# Build both executables
-python build-gui.py
+# Build CLI only
+python build.py --cli
+
+# Build GUI only
+python build.py --gui
+
+# Build both
+python build.py --all
 ```
 
 ## Release Workflow
