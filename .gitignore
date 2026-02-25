@@ -120,3 +120,4 @@ downloader.log
 
 # Temporary release artifacts
 release-artifacts/
+CLAUDE.md
