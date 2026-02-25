@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import re
 import sys
 import time
 from pathlib import Path
@@ -68,6 +69,8 @@ def download_song(
     timeout: int = 60,
     retries: int = 3,
     overwrite: bool = False,
+    renumber: bool = False,
+    total_songs: int = 1,
     progress_callback: Any | None = None,
 ) -> DownloadResult:
     """
@@ -81,6 +84,8 @@ def download_song(
         timeout: Request timeout in seconds
         retries: Number of retry attempts
         overwrite: Whether to overwrite existing files
+        renumber: Whether to add leading zero prefix for sorting
+        total_songs: Total number of songs (for padding calculation)
         progress_callback: Optional callback for progress updates
 
     Returns:
@@ -97,12 +102,18 @@ def download_song(
 
             # Get filename from headers or use title
             from resource_fetcher_core.utils.http import (
+                add_track_number_prefix,
                 extract_filename_from_headers,
                 sanitize_filename,
             )
 
             filename = extract_filename_from_headers(dict(response.headers), song_id, song_title)
             filename = sanitize_filename(filename)
+
+            # Apply renumbering if enabled
+            if renumber:
+                filename = add_track_number_prefix(filename, total_songs=total_songs)
+
             output_path = output_dir / filename
 
             # Check if file exists
@@ -164,6 +175,87 @@ def download_song(
     return DownloadResult(status=DownloadStatus.FAILED, message="Unknown error")
 
 
+def renumber_directory(directory: Path, dry_run: bool = False) -> None:
+    """
+    Renumber all MP3 files in a directory with leading zero prefixes.
+
+    Args:
+        directory: Directory containing song files
+        dry_run: If True, only show what would be renamed
+    """
+    directory = Path(directory)
+
+    if not directory.exists():
+        logger.error(f"Directory not found: {directory}")
+        return
+
+    from resource_fetcher_core.utils.http import add_track_number_prefix
+
+    mp3_files = sorted(directory.glob("*.mp3"))
+    total_files = len(mp3_files)
+
+    if total_files == 0:
+        logger.info(f"No MP3 files found in {directory}")
+        return
+
+    logger.info(f"Found {total_files} files in {directory}")
+    print(f"\n找到 {total_files} 个文件 in {directory}\n")
+
+    renamed_count = 0
+    skipped_count = 0
+
+    for mp3_file in mp3_files:
+        # Extract track number from filename
+        match = re.search(r"第(\d+)首", mp3_file.stem)
+
+    mp3_files = sorted(directory.glob("*.mp3"))
+    total_files = len(mp3_files)
+
+    if total_files == 0:
+        logger.info(f"No MP3 files found in {directory}")
+        return
+
+    logger.info(f"Found {total_files} files in {directory}")
+    print(f"\n找到 {total_files} 个文件 in {directory}\n")
+
+    renamed_count = 0
+    skipped_count = 0
+
+    for mp3_file in mp3_files:
+        # Extract track number from filename
+        match = re.search(r"第(\d+)首", mp3_file.stem)
+        if not match:
+            logger.info(f"Skip: {mp3_file.name} (no track number)")
+            skipped_count += 1
+            continue
+
+        track_number = int(match.group(1))
+        old_name = mp3_file.name
+        new_name = add_track_number_prefix(old_name, track_number, total_files)
+
+        if old_name == new_name:
+            logger.info(f"Skip: {old_name} (already has prefix)")
+            skipped_count += 1
+            continue
+
+        if dry_run:
+            print(f"Would rename: {old_name} -> {new_name}")
+        else:
+            new_path = mp3_file.parent / new_name
+            try:
+                mp3_file.rename(new_path)
+                print(f"Renamed: {old_name} -> {new_name}")
+                renamed_count += 1
+            except Exception as e:
+                logger.error(f"Failed to rename {old_name}: {e}")
+                print(f"Error: Failed to rename {old_name}: {e}")
+
+    print("\n完成! Summary:")
+    print(f"  重命名 (Renamed): {renamed_count}")
+    print(f"  跳过 (Skipped): {skipped_count}")
+    print(f"  总计 (Total): {total_files}")
+
+
 def download_album(
     url: str,
     output_dir: Path,
@@ -172,6 +264,7 @@ def download_album(
     timeout: int = 60,
     retries: int = 3,
     delay: float = 0.5,
+    renumber: bool = False,
 ) -> bool:
     """
     Download an entire album.
@@ -184,6 +277,7 @@ def download_album(
         timeout: Request timeout in seconds
         retries: Number of retry attempts
         delay: Delay between downloads in seconds
+        renumber: Whether to add leading zero prefix for sorting
 
     Returns:
         True if all downloads succeeded, False otherwise
@@ -238,6 +332,8 @@ def download_album(
                 timeout=timeout,
                 retries=retries,
                 overwrite=overwrite,
+                renumber=renumber,
+                total_songs=len(album.songs),
             )
 
             # Update progress
@@ -286,7 +382,15 @@ For more information, visit: https://github.com/ChHsiching/resource-fetcher
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
-    parser.add_argument("--url", required=True, help="Album page URL to download")
+    # Create mutually exclusive group for URL and renumber-dir
+    mode_group = parser.add_mutually_exclusive_group(required=True)
+    mode_group.add_argument("--url", help="Album page URL to download")
+    mode_group.add_argument(
+        "--renumber-dir",
+        type=Path,
+        metavar="DIRECTORY",
+        help="Renumber existing MP3 files in DIRECTORY with leading zero prefixes",
+    )
 
     parser.add_argument(
         "--output",
@@ -305,6 +409,12 @@ For more information, visit: https://github.com/ChHsiching/resource-fetcher
 
     parser.add_argument(
         "--overwrite", action="store_true", help="Overwrite existing files instead of skipping them"
+    )
+
+    parser.add_argument(
+        "--renumber",
+        action="store_true",
+        help="Add leading zero prefixes for proper sorting (e.g., 001_, 010_, ...)",
     )
 
     parser.add_argument(
@@ -350,7 +460,12 @@ def main() -> None:
         logging.getLogger().setLevel(logging.DEBUG)
         logger.debug("Verbose mode enabled")
 
-    # Validate URL
+    # Handle --renumber-dir mode
+    if args.renumber_dir:
+        renumber_directory(args.renumber_dir)
+        sys.exit(0)
+
+    # Validate URL for download mode
     if not args.url.startswith("http"):
         parser.error(f"Invalid URL: {args.url}")
 
@@ -366,6 +481,7 @@ def main() -> None:
         timeout=args.timeout,
         retries=args.retries,
         delay=args.delay,
+        renumber=args.renumber,
     )
 
     # Exit with appropriate code
