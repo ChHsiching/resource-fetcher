@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { Moon, Sun } from "lucide-react";
 import UrlInput from "./components/UrlInput";
 import Configuration from "./components/Configuration";
@@ -62,6 +63,98 @@ function App() {
       });
   }, []);
 
+  // Setup Tauri event listeners for real-time progress updates
+  useEffect(() => {
+    const unlisteners = [
+      // Listen for download progress events
+      listen("download-progress", (event) => {
+        const payload = event.payload as {
+          type: string;
+          index?: number;
+          total?: number;
+          title?: string;
+          status?: string;
+          size?: number;
+          message?: string;
+        };
+
+        switch (payload.type) {
+          case "album_start":
+            addLog("INFO", `Album: ${payload.title} (${payload.total} songs)`);
+            setSongs([]);
+            break;
+
+          case "song_start":
+            setSongs((prev) => [
+              ...prev,
+              {
+                index: payload.index!,
+                title: payload.title || "",
+                status: "downloading",
+              },
+            ]);
+            addLog("INFO", `[${payload.index}/${payload.total}] Starting: ${payload.title}`);
+            break;
+
+          case "song_complete":
+            setSongs((prev) =>
+              prev.map((song) =>
+                song.index === payload.index
+                  ? {
+                      ...song,
+                      status: payload.status === "success" ? "success" : "failed",
+                      size: payload.size
+                        ? `${(payload.size / 1024).toFixed(1)} KB`
+                        : undefined,
+                    }
+                  : song
+              )
+            );
+            addLog(
+              payload.status === "success" ? "INFO" : "ERROR",
+              `[${payload.index}] ${payload.title}: ${payload.message}`
+            );
+            break;
+        }
+      }),
+
+      // Listen for download complete events
+      listen("download-complete", (event) => {
+        const payload = event.payload as {
+          type: string;
+          success: number;
+          failed: number;
+          skipped: number;
+          total: number;
+        };
+
+        setStatusMessage(`Download complete: ${payload.success} success, ${payload.failed} failed`);
+        setIsDownloading(false);
+        addLog(
+          "INFO",
+          `Album complete: ${payload.success} success, ${payload.failed} failed, ${payload.skipped} skipped`
+        );
+      }),
+
+      // Listen for download error events
+      listen("download-error", (event) => {
+        const payload = event.payload as {
+          type: string;
+          message: string;
+        };
+
+        setStatusMessage(`Error: ${payload.message}`);
+        setIsDownloading(false);
+        addLog("ERROR", payload.message);
+      }),
+    ];
+
+    // Cleanup function
+    return () => {
+      unlisteners.forEach((unlisten) => unlisten());
+    };
+  }, []);
+
   useEffect(() => {
     // Load theme from localStorage
     const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
@@ -115,7 +208,8 @@ function App() {
     setStatusMessage("Starting album download...");
 
     try {
-      const result = await invoke<string>("download_album", {
+      // Invoke download command (returns immediately, updates via events)
+      await invoke("download_album", {
         url,
         outputDir: config.outputDir,
         limit: config.limit ? parseInt(config.limit) : null,
@@ -126,28 +220,11 @@ function App() {
         pythonInfo,
       });
 
-      // Parse CLI output and add to logs
-      const lines = result.split("\n");
-      lines.forEach((line) => {
-        if (line.trim()) {
-          // Try to parse log level from Python log format
-          const logMatch = line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) - (\w+) - (\w+) - (.+)/);
-          if (logMatch) {
-            const [, timestamp, , level, message] = logMatch;
-            addLog(level as "INFO" | "WARNING" | "ERROR" | "DEBUG", message);
-          } else {
-            addLog("INFO", line);
-          }
-        }
-      });
-
-      setStatusMessage("Download completed");
-      addLog("INFO", "Download completed successfully");
+      // Note: Progress updates will come via Tauri events
     } catch (error) {
       const errorMsg = String(error);
       setStatusMessage(`Error: ${errorMsg}`);
       addLog("ERROR", errorMsg);
-    } finally {
       setIsDownloading(false);
     }
   };
@@ -166,7 +243,8 @@ function App() {
     setStatusMessage("Starting song download...");
 
     try {
-      const result = await invoke<string>("download_song", {
+      // Invoke download command (returns immediately, updates via events)
+      await invoke("download_song", {
         url,
         outputDir: config.outputDir,
         timeout: parseInt(config.timeout),
@@ -175,27 +253,11 @@ function App() {
         pythonInfo,
       });
 
-      // Parse CLI output and add to logs
-      const lines = result.split("\n");
-      lines.forEach((line) => {
-        if (line.trim()) {
-          const logMatch = line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) - (\w+) - (\w+) - (.+)/);
-          if (logMatch) {
-            const [, timestamp, , level, message] = logMatch;
-            addLog(level as "INFO" | "WARNING" | "ERROR" | "DEBUG", message);
-          } else {
-            addLog("INFO", line);
-          }
-        }
-      });
-
-      setStatusMessage("Download completed");
-      addLog("INFO", "Download completed successfully");
+      // Note: Progress updates will come via Tauri events
     } catch (error) {
       const errorMsg = String(error);
       setStatusMessage(`Error: ${errorMsg}`);
       addLog("ERROR", errorMsg);
-    } finally {
       setIsDownloading(false);
     }
   };
@@ -239,7 +301,7 @@ function App() {
             isDownloading={isDownloading}
           />
           <Configuration config={config} onChange={setConfig} />
-          <ProgressDisplay songs={songs} total={songs.length} current={0} />
+          <ProgressDisplay songs={songs} total={songs.length} current={songs.filter(s => s.status === "success").length} />
           <LogDisplay
             logs={logs}
             isVisible={showLogs}

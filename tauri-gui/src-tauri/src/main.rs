@@ -1,9 +1,12 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
-use std::process::Command;
-use std::env;
+use std::process::{Command, Stdio};
+use std::sync::mpsc;
+use std::thread;
+use std::time::Duration;
 
 fn main() {
     tauri::Builder::default()
@@ -95,6 +98,7 @@ fn download_album(
     overwrite: bool,
     verbose: bool,
     python_info: PythonInfo,
+    app: tauri::AppHandle,
 ) -> Result<String, String> {
     let mut cmd = Command::new(&python_info.python_path);
 
@@ -122,21 +126,122 @@ fn download_album(
         cmd.arg("--verbose");
     }
 
-    // Execute CLI and capture output
-    let output = cmd
-        .output()
-        .map_err(|e| format!("Failed to execute CLI: {}", e))?;
+    // Setup for streaming output
+    cmd.stdout(Stdio::piped())
+        .stderr(Stdio::piped());
 
-    if output.status.success() {
-        Ok(String::from_utf8_lossy(&output.stdout).to_string())
-    } else {
-        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-        if stderr.is_empty() {
-            Err(stdout)
-        } else {
-            Err(stderr)
+    // Spawn the subprocess
+    let mut child = cmd
+        .spawn()
+        .map_err(|e| format!("Failed to spawn CLI process: {}", e))?;
+
+    // Get stdout and stderr handles
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or("Failed to capture stdout")?;
+    let stderr = child
+        .stderr
+        .take()
+        .ok_or("Failed to capture stderr")?;
+
+    // Create channels for sending events back to main thread
+    let (tx, rx) = mpsc::channel::<ProgressEvent>();
+
+    // Spawn thread to read stdout
+    let stdout_reader = BufReader::new(stdout);
+    let tx_clone = tx.clone();
+    thread::spawn(move || {
+        for line in stdout_reader.lines() {
+            if let Ok(line) = line {
+                // Check for progress markers
+                if line.starts_with(">>>PROGRESS:") {
+                    if let Some(json_str) = line.strip_prefix(">>>PROGRESS:") {
+                        if let Ok(event) = parse_progress_event(json_str) {
+                            tx_clone.send(event).ok();
+                        }
+                    }
+                }
+            }
         }
+    });
+
+    // Spawn thread to read stderr (where progress markers are written)
+    let stderr_reader = BufReader::new(stderr);
+    thread::spawn(move || {
+        for line in stderr_reader.lines() {
+            if let Ok(line) = line {
+                // Check for progress markers
+                if line.starts_with(">>>PROGRESS:") {
+                    if let Some(json_str) = line.strip_prefix(">>>PROGRESS:") {
+                        if let Ok(event) = parse_progress_event(json_str) {
+                            tx.send(event).ok();
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Listen for progress events and emit to frontend
+    let app_clone = app.clone();
+    thread::spawn(move || {
+        while let Ok(event) = rx.recv() {
+            match event {
+                ProgressEvent::AlbumStart { title, source, total } => {
+                    app_clone.emit("download-progress", serde_json::json!({
+                        "type": "album_start",
+                        "title": title,
+                        "source": source,
+                        "total": total
+                    })).ok();
+                }
+                ProgressEvent::SongStart { index, total, title } => {
+                    app_clone.emit("download-progress", serde_json::json!({
+                        "type": "song_start",
+                        "index": index,
+                        "total": total,
+                        "title": title
+                    })).ok();
+                }
+                ProgressEvent::SongComplete { index, title, status, size, message } => {
+                    app_clone.emit("download-progress", serde_json::json!({
+                        "type": "song_complete",
+                        "index": index,
+                        "title": title,
+                        "status": status,
+                        "size": size,
+                        "message": message
+                    })).ok();
+                }
+                ProgressEvent::AlbumComplete { success, failed, skipped, total } => {
+                    app_clone.emit("download-complete", serde_json::json!({
+                        "type": "album_complete",
+                        "success": success,
+                        "failed": failed,
+                        "skipped": skipped,
+                        "total": total
+                    })).ok();
+                }
+                ProgressEvent::Error { message } => {
+                    app_clone.emit("download-error", serde_json::json!({
+                        "type": "error",
+                        "message": message
+                    })).ok();
+                }
+            }
+        }
+    });
+
+    // Wait for process to complete
+    let status = child
+        .wait()
+        .map_err(|e| format!("Failed to wait for CLI process: {}", e))?;
+
+    if status.success() {
+        Ok("Download completed".to_string())
+    } else {
+        Err(format!("Download failed with exit code: {:?}", status.code()))
     }
 }
 
@@ -148,6 +253,7 @@ fn download_song(
     retries: u32,
     verbose: bool,
     python_info: PythonInfo,
+    app: tauri::AppHandle,
 ) -> Result<String, String> {
     let mut cmd = Command::new(&python_info.python_path);
 
@@ -167,22 +273,178 @@ fn download_song(
         cmd.arg("--verbose");
     }
 
-    // Execute CLI and capture output
-    let output = cmd
-        .output()
-        .map_err(|e| format!("Failed to execute CLI: {}", e))?;
+    // Setup for streaming output
+    cmd.stdout(Stdio::piped())
+        .stderr(Stdio::piped());
 
-    if output.status.success() {
-        Ok(String::from_utf8_lossy(&output.stdout).to_string())
-    } else {
-        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-        if stderr.is_empty() {
-            Err(stdout)
-        } else {
-            Err(stderr)
+    // Spawn the subprocess
+    let mut child = cmd
+        .spawn()
+        .map_err(|e| format!("Failed to spawn CLI process: {}", e))?;
+
+    // Get stdout and stderr handles
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or("Failed to capture stdout")?;
+    let stderr = child
+        .stderr
+        .take()
+        .ok_or("Failed to capture stderr")?;
+
+    // Create channels for sending events back to main thread
+    let (tx, rx) = mpsc::channel::<ProgressEvent>();
+
+    // Spawn thread to read stdout
+    let stdout_reader = BufReader::new(stdout);
+    let tx_clone = tx.clone();
+    thread::spawn(move || {
+        for line in stdout_reader.lines() {
+            if let Ok(line) = line {
+                if line.starts_with(">>>PROGRESS:") {
+                    if let Some(json_str) = line.strip_prefix(">>>PROGRESS:") {
+                        if let Ok(event) = parse_progress_event(json_str) {
+                            tx_clone.send(event).ok();
+                        }
+                    }
+                }
+            }
         }
+    });
+
+    // Spawn thread to read stderr
+    let stderr_reader = BufReader::new(stderr);
+    thread::spawn(move || {
+        for line in stderr_reader.lines() {
+            if let Ok(line) = line {
+                if line.starts_with(">>>PROGRESS:") {
+                    if let Some(json_str) = line.strip_prefix(">>>PROGRESS:") {
+                        if let Ok(event) = parse_progress_event(json_str) {
+                            tx.send(event).ok();
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Listen for progress events and emit to frontend
+    let app_clone = app.clone();
+    thread::spawn(move || {
+        while let Ok(event) = rx.recv() {
+            match event {
+                ProgressEvent::AlbumStart { title, source, total } => {
+                    app_clone.emit("download-progress", serde_json::json!({
+                        "type": "album_start",
+                        "title": title,
+                        "source": source,
+                        "total": total
+                    })).ok();
+                }
+                ProgressEvent::SongStart { index, total, title } => {
+                    app_clone.emit("download-progress", serde_json::json!({
+                        "type": "song_start",
+                        "index": index,
+                        "total": total,
+                        "title": title
+                    })).ok();
+                }
+                ProgressEvent::SongComplete { index, title, status, size, message } => {
+                    app_clone.emit("download-progress", serde_json::json!({
+                        "type": "song_complete",
+                        "index": index,
+                        "title": title,
+                        "status": status,
+                        "size": size,
+                        "message": message
+                    })).ok();
+                }
+                ProgressEvent::AlbumComplete { success, failed, skipped, total } => {
+                    app_clone.emit("download-complete", serde_json::json!({
+                        "type": "album_complete",
+                        "success": success,
+                        "failed": failed,
+                        "skipped": skipped,
+                        "total": total
+                    })).ok();
+                }
+                ProgressEvent::Error { message } => {
+                    app_clone.emit("download-error", serde_json::json!({
+                        "type": "error",
+                        "message": message
+                    })).ok();
+                }
+            }
+        }
+    });
+
+    // Wait for process to complete
+    let status = child
+        .wait()
+        .map_err(|e| format!("Failed to wait for CLI process: {}", e))?;
+
+    if status.success() {
+        Ok("Download completed".to_string())
+    } else {
+        Err(format!("Download failed with exit code: {:?}", status.code()))
     }
+}
+
+/// Parse a progress event JSON string
+fn parse_progress_event(json_str: &str) -> Result<ProgressEvent, String> {
+    use serde_json::Value;
+
+    let v: Value = serde_json::from_str(json_str)
+        .map_err(|e| format!("Failed to parse JSON: {}", e))?;
+
+    let event_type = v.get("type")
+        .and_then(|t| t.as_str())
+        .ok_or("Missing event type")?;
+
+    match event_type {
+        "album_start" => {
+            let title = v.get("title").and_then(|t| t.as_str()).unwrap_or("").to_string();
+            let source = v.get("source").and_then(|s| s.as_str()).unwrap_or("").to_string();
+            let total = v.get("total").and_then(|t| t.as_u64()).unwrap_or(0) as usize;
+            Ok(ProgressEvent::AlbumStart { title, source, total })
+        }
+        "song_start" => {
+            let index = v.get("index").and_then(|i| i.as_u64()).unwrap_or(0) as usize;
+            let total = v.get("total").and_then(|t| t.as_u64()).unwrap_or(0) as usize;
+            let title = v.get("title").and_then(|t| t.as_str()).unwrap_or("").to_string();
+            Ok(ProgressEvent::SongStart { index, total, title })
+        }
+        "song_complete" => {
+            let index = v.get("index").and_then(|i| i.as_u64()).unwrap_or(0) as usize;
+            let title = v.get("title").and_then(|t| t.as_str()).unwrap_or("").to_string();
+            let status = v.get("status").and_then(|s| s.as_str()).unwrap_or("").to_string();
+            let size = v.get("size").and_then(|s| s.as_u64()).unwrap_or(0) as usize;
+            let message = v.get("message").and_then(|m| m.as_str()).unwrap_or("").to_string();
+            Ok(ProgressEvent::SongComplete { index, title, status, size, message })
+        }
+        "album_complete" => {
+            let success = v.get("success").and_then(|s| s.as_u64()).unwrap_or(0) as usize;
+            let failed = v.get("failed").and_then(|f| f.as_u64()).unwrap_or(0) as usize;
+            let skipped = v.get("skipped").and_then(|s| s.as_u64()).unwrap_or(0) as usize;
+            let total = v.get("total").and_then(|t| t.as_u64()).unwrap_or(0) as usize;
+            Ok(ProgressEvent::AlbumComplete { success, failed, skipped, total })
+        }
+        "error" => {
+            let message = v.get("message").and_then(|m| m.as_str()).unwrap_or("").to_string();
+            Ok(ProgressEvent::Error { message })
+        }
+        _ => Err(format!("Unknown event type: {}", event_type))
+    }
+}
+
+/// Progress event types
+#[derive(Debug)]
+enum ProgressEvent {
+    AlbumStart { title: String, source: String, total: usize },
+    SongStart { index: usize, total: usize, title: String },
+    SongComplete { index: usize, title: String, status: String, size: usize, message: String },
+    AlbumComplete { success: usize, failed: usize, skipped: usize, total: usize },
+    Error { message: String },
 }
 
 #[derive(serde::Serialize)]
