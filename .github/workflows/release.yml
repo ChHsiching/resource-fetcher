@@ -115,12 +115,12 @@ jobs:
       - name: Build CLI binary
         shell: bash
         run: |
-          poetry run pyinstaller --onefile --name ${{ matrix.cli_binary }} --clean --distpath dist-cli src/resource_fetcher/cli/main.py
+          poetry run pyinstaller --onefile --name ${{ matrix.cli_binary }} --clean --distpath dist-cli cli/src/resource_fetcher_cli/cli/main.py
 
       - name: Build GUI binary
         shell: bash
         run: |
-          poetry run pyinstaller --onefile --name ${{ matrix.gui_binary }} --windowed --clean --distpath dist-gui --hidden-import tkinter --hidden-import ttkbootstrap --hidden-import pyperclip src/resource_fetcher/gui/main.py
+          poetry run pyinstaller --onefile --name ${{ matrix.gui_binary }} --windowed --clean --distpath dist-gui --hidden-import tkinter --hidden-import ttkbootstrap --hidden-import pyperclip gui/src/resource_fetcher_gui/gui/main.py
 
       - name: Rename binaries with platform suffix (Linux/macOS)
         if: runner.os != 'Windows'

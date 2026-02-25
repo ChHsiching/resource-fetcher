@@ -1,12 +1,11 @@
 [tool.poetry]
-name = "resource-fetcher-workspace"
+name = "resource-fetcher"
 version = "0.2.0"
 description = "Universal resource fetching framework with extensible architecture"
 authors = ["ChHsiching <hsichingchang@gmail.com>"]
 readme = "README.md"
 license = "MIT"
 
-# Poetry Workspace Configuration
 [tool.poetry.dependencies]
 python = "~3.10"
 
@@ -17,13 +16,6 @@ pytest-mock = "^3.11.0"
 ruff = "^0.1.0"
 mypy = "^1.0.0"
 pyinstaller = "^6.0.0"
-
-[tool.poetry.workspace]
-members = [
-    "packages/resource-fetcher-core",
-    "packages/resource-fetcher-cli",
-    "packages/resource-fetcher-gui",
-]
 
 [build-system]
 requires = ["poetry-core"]
