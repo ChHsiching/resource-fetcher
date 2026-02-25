@@ -38,11 +38,12 @@ def main() -> int:
 
         # Import GUI components
         from resource_fetcher_gui.gui.widgets.main_window import MainWindow
+        from resource_fetcher_gui.styles import DEFAULT_THEME
 
         logger.info("GUI widgets imported successfully")
 
-        # Create and run main window
-        app = MainWindow(theme="cosmo")
+        # Create and run main window with default theme
+        app = MainWindow(theme=DEFAULT_THEME)
         app.run()
 
         return 0

@@ -15,6 +15,7 @@ from resource_fetcher_gui.gui.widgets.config_widget import ConfigWidget
 from resource_fetcher_gui.gui.widgets.progress_widget import ProgressWidget
 from resource_fetcher_gui.gui.widgets.status_bar import StatusBar
 from resource_fetcher_gui.gui.widgets.url_input_widget import URLInputWidget
+from resource_fetcher_gui.styles import StyleManager
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,9 @@ class MainWindow(bootstrap.Window):
 
         # Center window on screen
         self.center_window()
+
+        # Initialize styling
+        StyleManager.initialize(self, theme)
 
         # Build UI
         self._create_widgets()
