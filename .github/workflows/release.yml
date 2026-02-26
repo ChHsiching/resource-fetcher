@@ -272,7 +272,6 @@ jobs:
           files: |
             artifacts/resource-fetcher-cli-*/*
             artifacts/resource-fetcher-tauri-*/*
-          generate_release_notes: true
           draft: false
           prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
           body_path: CHANGELOG.md
