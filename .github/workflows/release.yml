@@ -67,18 +67,18 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         include:
-          - os: ubuntu-latest
-            os_name: linux
-            cli_binary: resource-fetcher
-            binary_ext: ''
-          - os: windows-latest
-            os_name: windows
-            cli_binary: resource-fetcher.exe
-            binary_ext: '.exe'
-          - os: macos-latest
-            os_name: macos
-            cli_binary: resource-fetcher
-            binary_ext: ''
+        - os: ubuntu-latest
+          os_name: linux
+          cli_binary: resource-fetcher
+          binary_ext: ''
+        - os: windows-latest
+          os_name: windows
+          cli_binary: resource-fetcher.exe
+          binary_ext: '.exe'
+        - os: macos-latest
+          os_name: macos
+          cli_binary: resource-fetcher
+          binary_ext: ''
 
     steps:
       - name: Checkout code
@@ -171,7 +171,7 @@ jobs:
         run: |
           mv dist-cli/${{ matrix.cli_binary }} dist-cli/resource-fetcher-${{ matrix.os_name }}.exe
 
-      -name: Upload CLI artifact
+      - name: Upload CLI artifact
         uses: actions/upload-artifact@v4
         with:
           name: resource-fetcher-cli-${{ matrix.os_name }}
@@ -186,15 +186,15 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         include:
-          - os: ubuntu-latest
-            os_name: linux
-            tauri_target: x86_64-unknown-linux-gnu
-          - os: windows-latest
-            os_name: windows
-            tauri_target: x86_64-pc-windows-msvc
-          - os: macos-latest
-            os_name: macos
-            tauri_target: x86_64-apple-darwin
+        - os: ubuntu-latest
+          os_name: linux
+          tauri_target: x86_64-unknown-linux-gnu
+        - os: windows-latest
+          os_name: windows
+          tauri_target: x86_64-pc-windows-msvc
+        - os: macos-latest
+          os_name: macos
+          tauri_target: x86_64-apple-darwin
 
     steps:
       - name: Checkout code
