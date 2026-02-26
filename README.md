@@ -28,14 +28,35 @@ A flexible, extensible tool for batch downloading resources from websites.
 
 Download from the [Releases](https://github.com/ChHsiching/resource-fetcher/releases) page:
 
-**Installers:**
-- `Resource Fetcher_0.2.0_x64-setup.exe` - NSIS installer (2.4 MB)
+**Installer:**
 - `Resource Fetcher_0.2.0_x64_en-US.msi` - MSI installer (3.6 MB)
 
-Both installers create:
+The installer creates:
 - Desktop shortcut
 - Start Menu entry
 - Add to Programs and Features (uninstaller included)
+
+### Option 1a: Linux (Debian/Ubuntu)
+
+Download `.deb` package from the [Releases](https://github.com/ChHsiching/resource-fetcher/releases) page:
+
+```bash
+sudo dpkg -i resource-fetcher-gui_0.2.0_amd64.deb
+sudo apt-get install -f  # Fix dependencies
+```
+
+### Option 1b: Linux (Universal)
+
+Download `.AppImage` package from the [Releases](https://github.com/ChHsiching/resource-fetcher/releases) page:
+
+```bash
+chmod +x Resource-Fetcher-0.2.0-linux.AppImage
+./Resource-Fetcher-0.2.0-linux.AppImage
+```
+
+### Option 1c: macOS
+
+Download `.dmg` file from the [Releases](https://github.com/ChHsiching/resource-fetcher/releases) page and drag to Applications.
 
 ### Option 2: Portable Package
 
@@ -45,13 +66,13 @@ Download `Resource-Fetcher-Portable-win-x64.zip` (11 MB), extract, and run:
 - Double-click `Resource-Fetcher.exe` to launch GUI
 - Or use CLI from `runtime/cli/resource-fetcher.exe`
 
-### Option 3: Standalone CLI
+### Option 3: Standalone CLI (All Platforms)
 
 Download `resource-fetcher.exe` (7.8 MB) for command-line usage only.
 
 All options include both GUI and CLI - no Python installation required!
 
-### Option 2: From Source
+### Option 4: From Source
 
 **Requirements**: Python 3.10+, Poetry
 
@@ -202,7 +223,7 @@ resource-fetcher/
 ├── tauri-gui/              # Tauri GUI project (Node.js)
 │   ├── src/                # React + TypeScript source
 │   ├── src-tauri/          # Rust backend
-│   │   ├── tauri.conf.json # Tauri configuration (NSIS/MSI targets)
+│   │   ├── tauri.conf.json # Tauri configuration (MSI/DEB/DMG/AppImage targets)
 │   │   └── src/main.rs     # CLI path detection (portable/installed)
 │   ├── package.json        # Node.js dependencies
 │   └── tests/              # Vitest + Playwright tests
@@ -261,9 +282,11 @@ python build-all.py
 
 This creates:
 - `dist/resource-fetcher.exe` - Standalone CLI (7.8 MB)
-- `tauri-gui/src-tauri/target/release/bundle/nsis/*.exe` - NSIS installer
-- `tauri-gui/src-tauri/target/release/bundle/msi/*.msi` - MSI installer
-- `release/Resource-Fetcher-Portable-win-x64.zip` - Portable package
+- `tauri-gui/src-tauri/target/release/bundle/msi/*.msi` - MSI installer (Windows)
+- `tauri-gui/src-tauri/target/release/bundle/deb/*.deb` - DEB package (Linux)
+- `tauri-gui/src-tauri/target/release/bundle/appimage/*.AppImage` - AppImage (Linux)
+- `tauri-gui/src-tauri/target/release/bundle/dmg/*.dmg` - DMG image (macOS)
+- `release/Resource-Fetcher-Portable-win-x64.zip` - Portable package (Windows)
 
 ### Build Individual Components
 

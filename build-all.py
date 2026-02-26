@@ -93,19 +93,33 @@ def build_tauri_gui(portable_dir):
 
     # The GUI binary location depends on the build target
     if sys.platform == "win32":
-        # Check for NSIS installer first
-        nsis_bundle = Path("tauri-gui/src-tauri/target/release/bundle/nsis")
-        if nsis_bundle.exists():
-            exe_files = list(nsis_bundle.glob("*.exe"))
-            if exe_files:
-                print(f"[OK] NSIS installer created: {exe_files[0]}")
-
-        # Check for MSI installer
+        # Check for MSI installer (Windows-only)
         msi_bundle = Path("tauri-gui/src-tauri/target/release/bundle/msi")
         if msi_bundle.exists():
             msi_files = list(msi_bundle.glob("*.msi"))
             if msi_files:
                 print(f"[OK] MSI installer created: {msi_files[0]}")
+
+        # Check for DEB package (Linux)
+        deb_bundle = Path("tauri-gui/src-tauri/target/release/bundle/deb")
+        if deb_bundle.exists():
+            deb_files = list(deb_bundle.glob("*.deb"))
+            if deb_files:
+                print(f"[OK] DEB package created: {deb_files[0]}")
+
+        # Check for AppImage (Linux)
+        appimage_bundle = Path("tauri-gui/src-tauri/target/release/bundle/appimage")
+        if appimage_bundle.exists():
+            appimage_files = list(appimage_bundle.glob("*.AppImage"))
+            if appimage_files:
+                print(f"[OK] AppImage created: {appimage_files[0]}")
+
+        # Check for DMG (macOS)
+        dmg_bundle = Path("tauri-gui/src-tauri/target/release/bundle/dmg")
+        if dmg_bundle.exists():
+            dmg_files = list(dmg_bundle.glob("*.dmg"))
+            if dmg_files:
+                print(f"[OK] DMG created: {dmg_files[0]}")
 
         # Also check for standalone exe
         gui_binary = Path("tauri-gui/src-tauri/target/release/resource-fetcher-gui.exe")
@@ -192,7 +206,7 @@ def main():
     # 2. Create portable Python environment
     portable_dir = build_portable_python(cli_binary)
 
-    # 3. Build Tauri GUI (this will create installers via NSIS/MSI)
+    # 3. Build Tauri GUI (this will create installers: MSI/DEB/DMG/AppImage)
     gui_binary = build_tauri_gui(portable_dir)
 
     # 4. Create portable ZIP package
@@ -203,8 +217,10 @@ def main():
     print("="*60)
     print("\nArtifacts created:")
     print("  - release/Resource-Fetcher-Portable-win-x64.zip")
-    print("  - tauri-gui/src-tauri/target/release/bundle/nsis/*.exe")
-    print("  - tauri-gui/src-tauri/target/release/bundle/msi/*.msi")
+    print("  - tauri-gui/src-tauri/target/release/bundle/msi/*.msi (Windows)")
+    print("  - tauri-gui/src-tauri/target/release/bundle/deb/*.deb (Linux)")
+    print("  - tauri-gui/src-tauri/target/release/bundle/appimage/*.AppImage (Linux)")
+    print("  - tauri-gui/src-tauri/target/release/bundle/dmg/*.dmg (macOS)")
     print("\nNext steps:")
     print("  1. Test the portable package by extracting and running")
     print("  2. Test the NSIS installer")
