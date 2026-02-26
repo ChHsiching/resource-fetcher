@@ -40,5 +40,14 @@
     },
     "shortDescription": "Music resource fetching tool",
     "longDescription": "A powerful tool to download music resources from various platforms with both GUI and CLI interfaces."
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQzMDFBREQ0M0Q2RDY2NzYKUldSMlptMDkxSzBCUTlnZGhlaDdTekF4ekdRR3ZnQkZJUytyTlNqbmdMYjR6RDFQUm80ay9UTlEK",
+      "endpoints": [
+        "https://github.com/ChHsiching/resource-fetcher/releases/latest/download/latest.json"
+      ]
+    }
   }
 }
