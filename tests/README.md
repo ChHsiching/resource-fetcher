@@ -1,24 +1,23 @@
 # Resource Fetcher - Testing
 
-This project has comprehensive test coverage with **133 total tests**.
+This project has comprehensive test coverage with **85 total tests**.
 
 ## Test Overview
 
 | Test Suite | Count | Framework | Location |
 |------------|-------|-----------|----------|
-| Python Unit Tests | 43 | pytest | `tests/unit/` |
-| Python Integration Tests | 25 | pytest | `tests/integration/` |
-| Python GUI Tests | 43 | pytest | `tests/gui/` |
+| Python Unit Tests | 45 | pytest | `tests/unit/` |
+| Python Integration Tests | 18 | pytest | `tests/integration/` |
 | Tauri Vitest Tests | 18 | vitest | `tauri-gui/src/**/*.test.ts` |
 | Tauri E2E Tests | 4 | playwright | `tauri-gui/tests/e2e/` |
-| **TOTAL** | **133** | - | - |
+| **TOTAL** | **85** | - | - |
 
 ## Running Tests
 
-### All Tests (133 total)
+### All Tests (85 total)
 
 ```bash
-# Python tests (111 tests)
+# Python tests (63 tests)
 poetry run pytest tests/ -v
 
 # Tauri tests (22 tests)
@@ -28,20 +27,17 @@ cd tauri-gui && npm test
 ### Python Tests Only
 
 ```bash
-# All Python tests (111)
+# All Python tests (63)
 poetry run pytest tests/ -v
 
-# Unit tests (43)
+# Unit tests (45)
 poetry run pytest tests/unit/ -v
 
-# Integration tests (25)
+# Integration tests (18)
 poetry run pytest tests/integration/ -v
 
-# GUI tests (43)
-poetry run pytest tests/gui/ -v
-
 # With coverage
-poetry run pytest tests/ --cov=cli/core/src --cov=cli/src --cov=gui/src
+poetry run pytest tests/ --cov=cli/core/src --cov=cli/src
 ```
 
 ### Tauri Tests Only
@@ -65,7 +61,6 @@ npm run test:e2e
 **Current Coverage**:
 - Python core library: ~85%
 - Python CLI: ~80%
-- Python GUI: ~75%
 - Tauri frontend: ~70% (goal)
 
 **Target Coverage**: 80% across all modules
@@ -76,17 +71,15 @@ npm run test:e2e
 
 ```
 tests/
-├── unit/                      # 43 tests
+├── unit/                      # 45 tests
 │   ├── test_http.py          # HTTP utilities
 │   ├── test_adapters.py      # Site adapters
 │   ├── test_models.py        # Data models
+│   ├── test_interfaces.py    # Interface tests
 │   └── test_renumbering.py   # Song renumbering
-├── integration/               # 25 tests
-│   └── test_download_flow.py # End-to-end download flows
-└── gui/                       # 43 tests
-    ├── test_config_service.py # Configuration management
-    ├── test_download_service.py # Download orchestration
-    └── test_widgets.py       # UI components
+└── integration/               # 18 tests
+    ├── test_download_flow.py # Download flow tests
+    └── test_renumbering.py   # Renumbering integration tests
 ```
 
 ### Tauri Tests
@@ -217,7 +210,7 @@ Generate HTML coverage report:
 
 ```bash
 # Python
-poetry run pytest tests/ --cov=cli/core/src --cov=cli/src --cov=gui/src --cov-report=html
+poetry run pytest tests/ --cov=cli/core/src --cov=cli/src --cov-report=html
 
 # View report
 open htmlcov/index.html

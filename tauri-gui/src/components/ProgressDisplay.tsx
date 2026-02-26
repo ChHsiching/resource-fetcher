@@ -1,6 +1,6 @@
-import { Clock, HardDrive, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Clock, CheckCircle, XCircle, Loader2 } from "lucide-react";
 
-interface SongProgress {
+export interface SongProgress {
   index: number;
   title: string;
   status: "pending" | "downloading" | "success" | "failed";

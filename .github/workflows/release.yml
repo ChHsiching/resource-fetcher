@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   test-python:
-    name: Test Python (111 tests)
+    name: Test Python (63 tests)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -61,7 +61,7 @@ jobs:
         working-directory: ./tauri-gui
         run: npm test
 
-  build-python:
+  build-cli:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -70,17 +70,14 @@ jobs:
           - os: ubuntu-latest
             os_name: linux
             cli_binary: resource-fetcher
-            gui_binary: resource-fetcher-gui
             binary_ext: ''
           - os: windows-latest
             os_name: windows
             cli_binary: resource-fetcher.exe
-            gui_binary: resource-fetcher-gui.exe
             binary_ext: '.exe'
           - os: macos-latest
             os_name: macos
             cli_binary: resource-fetcher
-            gui_binary: resource-fetcher-gui
             binary_ext: ''
 
     steps:
@@ -161,42 +158,26 @@ jobs:
         run: |
           poetry run pyinstaller --onefile --name ${{ matrix.cli_binary }} --clean --distpath dist-cli cli/src/resource_fetcher_cli/cli/main.py
 
-      - name: Build GUI binary
-        shell: bash
-        run: |
-          poetry run pyinstaller --onefile --name ${{ matrix.gui_binary }} --windowed --clean --distpath dist-gui --hidden-import tkinter --hidden-import ttkbootstrap --hidden-import pyperclip gui/src/resource_fetcher_gui/gui/main.py
-
       - name: Rename binaries with platform suffix (Linux/macOS)
         if: runner.os != 'Windows'
         shell: bash
         run: |
           mv dist-cli/${{ matrix.cli_binary }} dist-cli/resource-fetcher-${{ matrix.os_name }}
-          mv dist-gui/${{ matrix.gui_binary }} dist-gui/resource-fetcher-gui-${{ matrix.os_name }}
           chmod +x dist-cli/resource-fetcher-${{ matrix.os_name }}
-          chmod +x dist-gui/resource-fetcher-gui-${{ matrix.os_name }}
 
       - name: Rename binaries with platform suffix (Windows)
         if: runner.os == 'Windows'
         shell: bash
         run: |
           mv dist-cli/${{ matrix.cli_binary }} dist-cli/resource-fetcher-${{ matrix.os_name }}.exe
-          mv dist-gui/${{ matrix.gui_binary }} dist-gui/resource-fetcher-gui-${{ matrix.os_name }}.exe
 
-      - name: Upload CLI artifact
+      -name: Upload CLI artifact
         uses: actions/upload-artifact@v4
         with:
           name: resource-fetcher-cli-${{ matrix.os_name }}
           path: |
             dist-cli/resource-fetcher-${{ matrix.os_name }}*
             dist-cli/resource-fetcher-${{ matrix.os_name }}*.exe
-
-      - name: Upload GUI artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: resource-fetcher-gui-${{ matrix.os_name }}
-          path: |
-            dist-gui/resource-fetcher-gui-${{ matrix.os_name }}*
-            dist-gui/resource-fetcher-gui-${{ matrix.os_name }}*.exe
 
   build-tauri:
     needs: [test-tauri]
@@ -269,7 +250,7 @@ jobs:
           if-no-files-found: warn
 
   release:
-    needs: [build-python, build-tauri]
+    needs: [build-cli, build-tauri]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
 
@@ -290,7 +271,6 @@ jobs:
         with:
           files: |
             artifacts/resource-fetcher-cli-*/*
-            artifacts/resource-fetcher-gui-*/*
             artifacts/resource-fetcher-tauri-*/*
           generate_release_notes: true
           draft: false

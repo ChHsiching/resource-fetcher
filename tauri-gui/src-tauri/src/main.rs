@@ -2,11 +2,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::io::{BufRead, BufReader};
-use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::mpsc;
 use std::thread;
-use std::time::Duration;
 
 fn main() {
     tauri::Builder::default()
@@ -20,6 +18,9 @@ fn main() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
+// Import the Emitter trait for event emission
+use tauri::Emitter;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -56,29 +57,50 @@ fn get_python_info() -> Result<PythonInfo, String> {
         venv_path.join("bin").join("python")
     };
 
-    // Get CLI executable path
-    let cli_dir = if cfg!(debug_assertions) {
-        let exe_dir = std::env::current_exe()
-            .map_err(|e| format!("Failed to get exe path: {}", e))?
-
-            .and_then(|p| p.parent())
-            .and_then(|p| p.parent())
-            .ok_or("Failed to get project root")?
-            .join("dist")
-    } else {
+    // Get CLI executable path with support for multiple deployment scenarios
+    let cli_exec = if cfg!(debug_assertions) {
+        // Development: look in dist directory
         let exe_dir = std::env::current_exe()
             .map_err(|e| format!("Failed to get exe path: {}", e))?;
 
-        exe_dir.parent()
-            .ok_or("Failed to get app directory")?
-            .join("Resources")
-            .join("cli")
-    };
+        let project_root = exe_dir
+            .parent()
+            .and_then(|p| p.parent())
+            .ok_or("Failed to get project root")?;
 
-    let cli_exec = if cfg!(windows) {
-        cli_dir.join("resource-fetcher.exe")
+        let cli_dir = project_root.join("dist");
+        if cfg!(windows) {
+            cli_dir.join("resource-fetcher.exe")
+        } else {
+            cli_dir.join("resource-fetcher")
+        }
     } else {
-        cli_dir.join("resource-fetcher")
+        // Production: try multiple locations
+        let exe_dir = std::env::current_exe()
+            .map_err(|e| format!("Failed to get exe path: {}", e))?;
+
+        let app_dir = exe_dir
+            .parent()
+            .ok_or("Failed to get app directory")?;
+
+        // Scenario 1: Portable package - CLI in same directory as GUI
+        let portable_cli = if cfg!(windows) {
+            app_dir.join("resource-fetcher.exe")
+        } else {
+            app_dir.join("resource-fetcher")
+        };
+
+        if portable_cli.exists() {
+            portable_cli
+        } else {
+            // Scenario 2: Installed version - CLI in Resources/cli/
+            let cli_dir = app_dir.join("Resources").join("cli");
+            if cfg!(windows) {
+                cli_dir.join("resource-fetcher.exe")
+            } else {
+                cli_dir.join("resource-fetcher")
+            }
+        }
     };
 
     Ok(PythonInfo {
@@ -95,7 +117,9 @@ fn download_album(
     limit: Option<usize>,
     timeout: u32,
     retries: u32,
+    delay: f64,
     overwrite: bool,
+    renumber: bool,
     verbose: bool,
     python_info: PythonInfo,
     app: tauri::AppHandle,
@@ -112,7 +136,9 @@ fn download_album(
         .arg("--timeout")
         .arg(timeout.to_string())
         .arg("--retries")
-        .arg(retries.to_string());
+        .arg(retries.to_string())
+        .arg("--delay")
+        .arg(delay.to_string());
 
     if let Some(n) = limit {
         cmd.arg("--limit").arg(n.to_string());
@@ -120,6 +146,10 @@ fn download_album(
 
     if overwrite {
         cmd.arg("--overwrite");
+    }
+
+    if renumber {
+        cmd.arg("--renumber");
     }
 
     if verbose {
@@ -251,6 +281,8 @@ fn download_song(
     output_dir: String,
     timeout: u32,
     retries: u32,
+    delay: f64,
+    renumber: bool,
     verbose: bool,
     python_info: PythonInfo,
     app: tauri::AppHandle,
@@ -267,7 +299,13 @@ fn download_song(
         .arg("--timeout")
         .arg(timeout.to_string())
         .arg("--retries")
-        .arg(retries.to_string());
+        .arg(retries.to_string())
+        .arg("--delay")
+        .arg(delay.to_string());
+
+    if renumber {
+        cmd.arg("--renumber");
+    }
 
     if verbose {
         cmd.arg("--verbose");
@@ -447,7 +485,7 @@ enum ProgressEvent {
     Error { message: String },
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct PythonInfo {
     python_path: String,
     cli_path: String,

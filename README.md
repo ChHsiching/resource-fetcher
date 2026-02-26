@@ -4,11 +4,12 @@ A flexible, extensible tool for batch downloading resources from websites.
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![Tests](https://img.shields.io/badge/Tests-133%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-85%20passing-brightgreen)
 
 ## Features
 
-- **Dual Interface**: Both command-line (CLI) and graphical user interface (GUI)
+- **Modern Interface**: Cross-platform GUI built with Tauri + React + TypeScript
+- **Command-Line Interface**: Full-featured CLI for automation and scripting
 - **Batch Downloads**: Download entire albums or resource collections in one go
 - **Smart Renumbering**: Add leading zero prefixes for proper sorting (e.g., 001_, 010_, 100_)
   - Dynamic padding based on total songs (1/2/3 digits)
@@ -17,18 +18,38 @@ A flexible, extensible tool for batch downloading resources from websites.
 - **Mojibake Correction**: Automatically fixes corrupted character encoding
 - **Resilient**: Built-in retry logic with exponential backoff
 - **Extensible**: Plugin-based architecture for adding new site adapters
-- **Progress Tracking**: Real-time download progress and statistics
+- **Real-Time Progress**: Live download progress streaming with detailed statistics
+- **Theme Support**: Light and dark mode toggle
 - **Frontend-Backend Separation**: GUI calls CLI via subprocess, both fully independent
 
 ## Installation
 
-### Option 1: Standalone Executables (Recommended)
+### Option 1: Windows Installer (Recommended)
 
 Download from the [Releases](https://github.com/ChHsiching/resource-fetcher/releases) page:
-- `resource-fetcher.exe` / `resource-fetcher` - Command-line interface
-- `resource-fetcher-gui.exe` / `resource-fetcher-gui` - Graphical user interface
 
-No Python installation required.
+**Installers:**
+- `Resource Fetcher_0.2.0_x64-setup.exe` - NSIS installer (2.4 MB)
+- `Resource Fetcher_0.2.0_x64_en-US.msi` - MSI installer (3.6 MB)
+
+Both installers create:
+- Desktop shortcut
+- Start Menu entry
+- Add to Programs and Features (uninstaller included)
+
+### Option 2: Portable Package
+
+**No installation required!**
+
+Download `Resource-Fetcher-Portable-win-x64.zip` (11 MB), extract, and run:
+- Double-click `Resource-Fetcher.exe` to launch GUI
+- Or use CLI from `runtime/cli/resource-fetcher.exe`
+
+### Option 3: Standalone CLI
+
+Download `resource-fetcher.exe` (7.8 MB) for command-line usage only.
+
+All options include both GUI and CLI - no Python installation required!
 
 ### Option 2: From Source
 
@@ -57,11 +78,9 @@ poetry install
 
 ## Quick Start
 
-This project offers **two** graphical user interfaces:
+### Graphical User Interface (Tauri)
 
-### Option 1: Tauri GUI (Modern - Recommended)
-
-**Advantages**: Real-time progress streaming, light/dark theme toggle, better performance, smaller binary size
+**Modern cross-platform GUI with real-time progress streaming**
 
 ```bash
 # Download from Releases
@@ -74,34 +93,19 @@ npm install
 npm run tauri dev
 ```
 
-### Option 2: Python GUI (Legacy)
-
-**Advantages**: Pure Python (easier to modify), same language as CLI backend
-
-```bash
-# Download from Releases
-resource-fetcher-gui.exe    # Windows
-resource-fetcher-gui       # Linux/macOS
-
-# Or from source
-poetry run python -m resource_fetcher_gui.gui.main
-```
-
-**Which GUI should I use?**
-
-| Use Case | Recommended GUI |
-|----------|----------------|
-| General users | **Tauri GUI** (modern, faster) |
-| Developers modifying GUI | **Python GUI** (same language as CLI) |
-| Embedded scripting | **CLI only** (no GUI needed) |
-| Automation | **CLI only** (better for scripts) |
+**Features**:
+- Real-time download progress with detailed statistics
+- Light/dark theme toggle
+- Configurable download options (delay, renumbering, limits, etc.)
+- Live log viewing
+- Download history
 
 ### Basic Workflow
 
-1. Run your preferred GUI (Tauri or Python)
+1. Run the Tauri GUI
 2. Paste the album URL
-3. Configure options (output directory, limits, etc.)
-4. Click "Download"
+3. Configure options (output directory, limits, delay, etc.)
+4. Click "Download Album" or "Download Song"
 5. Monitor progress in real-time
 
 ### Using CLI
@@ -153,7 +157,7 @@ resource-fetcher.exe --renumber-dir /path/to/songs
 
 ## Architecture
 
-This project uses a **dual GUI architecture** with a shared CLI backend:
+This project uses a **modern frontend-backend architecture**:
 
 ```
 ┌─────────────────────────────────────┐
@@ -161,7 +165,7 @@ This project uses a **dual GUI architecture** with a shared CLI backend:
 │  Rust + React + TypeScript          │
 │  - Real-time progress streaming     │
 │  - Light/Dark theme toggle          │
-│  - Better performance               │
+│  - Responsive UI with TailwindCSS   │
 └─────────────┬───────────────────────┘
               │
               │ subprocess
@@ -173,22 +177,13 @@ This project uses a **dual GUI architecture** with a shared CLI backend:
 │  - Standalone command-line tool     │
 │  - Can be used independently        │
 │  - All download logic               │
-└─────────────▲───────────────────────┘
-              │
-              │ subprocess
-              │
-┌─────────────────────────────────────┐
-│      Python GUI (Legacy)            │
-│  Python + ttkbootstrap              │
-│  - Pure Python (easier to modify)   │
-│  - Same language as CLI             │
 └─────────────────────────────────────┘
 ```
 
 **Key Benefits:**
 - CLI is completely independent and can be used in scripts/automation
-- Two GUI options: Modern Tauri (recommended) or Legacy Python (easier to modify)
-- Both GUIs call CLI via subprocess, maintaining separation of concerns
+- Modern GUI with non-blocking UI and real-time updates
+- Clean separation between frontend and backend
 - Each component can be maintained independently
 
 ## Project Structure
@@ -204,25 +199,23 @@ resource-fetcher/
 │   ├── pyproject.toml      # CLI dependencies
 │   └── src/resource_fetcher_cli/
 │       └── cli/main.py     # CLI entry point
-├── gui/                    # Python GUI project (Poetry-managed)
-│   ├── cli/                # CLI as backend component
-│   ├── pyproject.toml      # GUI dependencies
-│   └── src/resource_fetcher_gui/
-│       └── gui/
-│           ├── core/       # GUI services
-│           ├── widgets/    # UI components
-│           └── main.py     # GUI entry point
 ├── tauri-gui/              # Tauri GUI project (Node.js)
 │   ├── src/                # React + TypeScript source
 │   ├── src-tauri/          # Rust backend
+│   │   ├── tauri.conf.json # Tauri configuration (NSIS/MSI targets)
+│   │   └── src/main.rs     # CLI path detection (portable/installed)
 │   ├── package.json        # Node.js dependencies
 │   └── tests/              # Vitest + Playwright tests
-├── tests/                  # All Python tests (111 total)
-│   ├── unit/             # 43 unit tests
-│   ├── integration/      # 25 integration tests
-│   └── gui/              # 43 GUI tests
+├── tests/                  # All Python tests (63 total)
+│   ├── unit/             # 45 unit tests
+│   └── integration/      # 18 integration tests
+├── dist/                   # Build artifacts
+│   └── resource-fetcher.exe # Standalone CLI
+├── release/                # Release packages
+│   └── Resource-Fetcher-Portable-win-x64.zip
 ├── .venv/                  # Python virtual environment
-├── build.py               # Build script for CLI & Python GUI
+├── build.py               # Build script for CLI
+├── build-all.py           # Complete build system
 └── pyproject.toml         # Root configuration
 ```
 
@@ -235,52 +228,72 @@ curl -sSL https://install.python-poetry.org | python3 -
 # Install dependencies
 poetry install
 
-# Run all 111 tests
+# Run all 63 Python tests
 poetry run pytest tests/ -v
 
 # Run specific test
 poetry run pytest tests/unit/test_renumbering.py -v
 
 # Lint code
-poetry run ruff check cli/ gui/
+poetry run ruff check cli/
 
 # Format code
-poetry run ruff format cli/ gui/
+poetry run ruff format cli/
 
 # Type checking
 poetry run mypy cli/
 
 # Build CLI only
-python build.py --cli
-
-# Build GUI only
-python build.py --gui
-
-# Build both
 python build.py
+
+# Build everything (CLI + GUI + Installers + Portable)
+python build-all.py
+```
+
+## Building from Source
+
+### Quick Build - Everything
+
+```bash
+# Build all artifacts (CLI, GUI, installers, portable package)
+python build-all.py
+```
+
+This creates:
+- `dist/resource-fetcher.exe` - Standalone CLI (7.8 MB)
+- `tauri-gui/src-tauri/target/release/bundle/nsis/*.exe` - NSIS installer
+- `tauri-gui/src-tauri/target/release/bundle/msi/*.msi` - MSI installer
+- `release/Resource-Fetcher-Portable-win-x64.zip` - Portable package
+
+### Build Individual Components
+
+```bash
+# CLI only
+python build.py
+
+# GUI with installers
+cd tauri-gui
+npm run tauri build
 ```
 
 ## Testing
 
-The project has comprehensive test coverage with **133 tests** (111 Python + 22 Tauri):
+The project has comprehensive test coverage with **85 tests** (63 Python + 22 Tauri):
 
-### Python Tests (111 tests)
+### Python Tests (63 tests)
 
 ```bash
 # Run all Python tests
 poetry run pytest tests/ -v
 
-# Unit tests (43 tests)
+# Unit tests (45 tests)
 poetry run pytest tests/unit/ -v
 
-# Integration tests (25 tests)
+# Integration tests (18 tests)
 poetry run pytest tests/integration/ -v
 
-# Python GUI tests (43 tests)
-poetry run pytest tests/gui/ -v
-
 # Test coverage
-poetry run pytest tests/ --cov=cli/core/src --cov=cli/src --cov=gui/src
+poetry run pytest tests/ --cov=cli/core/src --cov=cli/src
 ```
 
 ### Tauri Tests (22 tests)
@@ -302,9 +315,8 @@ npm run test:all
 ```
 
 **Test Breakdown**:
-- 43 Python unit tests
-- 25 Python integration tests
-- 43 Python GUI tests
+- 45 Python unit tests
+- 18 Python integration tests
 - 18 Tauri Vitest tests
 - 4 Tauri Playwright E2E tests
 
@@ -359,7 +371,7 @@ When you push a version tag, the workflow automatically:
 1. ✅ Runs tests
 2. ✅ Extracts version number from the tag
 3. ✅ Generates CHANGELOG from git commit history
-4. ✅ Builds CLI and GUI binaries for Linux/Windows/macOS (6 binaries)
+4. ✅ Builds CLI and Tauri GUI binaries for Linux/Windows/macOS
 5. ✅ Creates GitHub Release with all artifacts
 6. ✅ Sets prerelease flag automatically for alpha/beta/rc tags
 
@@ -368,11 +380,11 @@ When you push a version tag, the workflow automatically:
 **For an official release (e.g., v0.3.0):**
 
 ```bash
-# 1. Update version in BOTH cli/pyproject.toml AND gui/pyproject.toml
+# 1. Update version in cli/pyproject.toml
 # version = "0.3.0"
 
 # 2. Commit the version bump
-git add cli/pyproject.toml gui/pyproject.toml
+git add cli/pyproject.toml
 git commit -m "chore: bump version to 0.3.0"
 
 # 3. Create and push tag
@@ -397,8 +409,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-Built with Python, using:
+Built with:
+- [Python](https://www.python.org/) - CLI backend and download logic
+- [Tauri](https://tauri.app/) - Desktop application framework
+- [React](https://react.dev/) - Frontend UI framework
+- [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
+- [TailwindCSS](https://tailwindcss.com/) - Utility-first CSS framework
 - [requests](https://requests.readthedocs.io/) - HTTP library
 - [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/) - HTML parsing
-- [ttkbootstrap](https://ttkbootstrap.readthedocs.io/) - Modern GUI framework
-- [Poetry](https://python-poetry.org/) - Dependency management
+- [Poetry](https://python-poetry.org/) - Python dependency management

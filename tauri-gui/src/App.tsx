@@ -18,7 +18,9 @@ interface DownloadConfig {
   limit: string;
   timeout: string;
   retries: string;
+  delay: string;
   overwrite: boolean;
+  renumber: boolean;
   verbose: boolean;
 }
 
@@ -33,11 +35,15 @@ const DEFAULT_CONFIG: DownloadConfig = {
   limit: "",
   timeout: "60",
   retries: "3",
+  delay: "0.5",
   overwrite: false,
+  renumber: false,
   verbose: false,
 };
 
 function App() {
+  console.log("App component rendering...");
+
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [config, setConfig] = useState<DownloadConfig>(DEFAULT_CONFIG);
   const [songs, setSongs] = useState<SongProgress[]>([]);
@@ -46,6 +52,7 @@ function App() {
   const [showLogs, setShowLogs] = useState(false);
   const [statusMessage, setStatusMessage] = useState("Ready");
   const [pythonInfo, setPythonInfo] = useState<PythonInfo | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const addLog = (level: "INFO" | "WARNING" | "ERROR" | "DEBUG", message: string) => {
     const now = new Date();
@@ -53,105 +60,157 @@ function App() {
     setLogs((prev) => [...prev, { timestamp, level, message }]);
   };
 
+  // Apply theme to HTML element
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+  }, [theme]);
+
   // Load Python environment info on mount
   useEffect(() => {
-    invoke<PythonInfo>("get_python_info")
-      .then(setPythonInfo)
-      .catch((err) => {
+    console.log("App mounted, checking Tauri context...");
+    console.log("Window object:", typeof window);
+    console.log("__TAURI__:", typeof window !== 'undefined' && '__TAURI__' in window);
+
+    const loadPythonInfo = async () => {
+      try {
+        console.log("Loading Python info...");
+        // Check if running in Tauri context
+        if (typeof window !== 'undefined' && '__TAURI__' in window) {
+          const info = await invoke<PythonInfo>("get_python_info");
+          setPythonInfo(info);
+          console.log("Python info loaded:", info);
+          setStatusMessage("Ready");
+        } else {
+          console.warn("Not running in Tauri context");
+          setStatusMessage("Development mode - Tauri API not available");
+        }
+      } catch (err) {
         console.error("Failed to get Python info:", err);
         setStatusMessage("Warning: Python environment not found");
-      });
+      } finally {
+        // Always mark as initialized, even if Python info loading failed
+        setIsInitialized(true);
+      }
+    };
+
+    loadPythonInfo();
   }, []);
 
   // Setup Tauri event listeners for real-time progress updates
   useEffect(() => {
-    const unlisteners = [
-      // Listen for download progress events
-      listen("download-progress", (event) => {
-        const payload = event.payload as {
-          type: string;
-          index?: number;
-          total?: number;
-          title?: string;
-          status?: string;
-          size?: number;
-          message?: string;
-        };
+    // 检查是否在 Tauri 环境中
+    if (typeof window === 'undefined' || !('__TAURI__' in window)) {
+      console.warn("Not in Tauri environment, skipping event listeners");
+      return;
+    }
 
-        switch (payload.type) {
-          case "album_start":
-            addLog("INFO", `Album: ${payload.title} (${payload.total} songs)`);
-            setSongs([]);
-            break;
+    const unlisteners: Array<() => void> = [];
 
-          case "song_start":
-            setSongs((prev) => [
-              ...prev,
-              {
-                index: payload.index!,
-                title: payload.title || "",
-                status: "downloading",
-              },
-            ]);
-            addLog("INFO", `[${payload.index}/${payload.total}] Starting: ${payload.title}`);
-            break;
+    // 设置事件监听器
+    const setupListeners = async () => {
+      try {
+        const unlisten1 = await listen("download-progress", (event) => {
+          const payload = event.payload as {
+            type: string;
+            index?: number;
+            total?: number;
+            title?: string;
+            status?: string;
+            size?: number;
+            message?: string;
+          };
 
-          case "song_complete":
-            setSongs((prev) =>
-              prev.map((song) =>
-                song.index === payload.index
-                  ? {
-                      ...song,
-                      status: payload.status === "success" ? "success" : "failed",
-                      size: payload.size
-                        ? `${(payload.size / 1024).toFixed(1)} KB`
-                        : undefined,
-                    }
-                  : song
-              )
-            );
-            addLog(
-              payload.status === "success" ? "INFO" : "ERROR",
-              `[${payload.index}] ${payload.title}: ${payload.message}`
-            );
-            break;
-        }
-      }),
+          switch (payload.type) {
+            case "album_start":
+              addLog("INFO", `Album: ${payload.title} (${payload.total} songs)`);
+              setSongs([]);
+              break;
 
-      // Listen for download complete events
-      listen("download-complete", (event) => {
-        const payload = event.payload as {
-          type: string;
-          success: number;
-          failed: number;
-          skipped: number;
-          total: number;
-        };
+            case "song_start":
+              setSongs((prev) => [
+                ...prev,
+                {
+                  index: payload.index!,
+                  title: payload.title || "",
+                  status: "downloading",
+                },
+              ]);
+              addLog("INFO", `[${payload.index}/${payload.total}] Starting: ${payload.title}`);
+              break;
 
-        setStatusMessage(`Download complete: ${payload.success} success, ${payload.failed} failed`);
-        setIsDownloading(false);
-        addLog(
-          "INFO",
-          `Album complete: ${payload.success} success, ${payload.failed} failed, ${payload.skipped} skipped`
-        );
-      }),
+            case "song_complete":
+              setSongs((prev) =>
+                prev.map((song) =>
+                  song.index === payload.index
+                    ? {
+                        ...song,
+                        status: payload.status === "success" ? "success" : "failed",
+                        size: payload.size
+                          ? `${(payload.size / 1024).toFixed(1)} KB`
+                          : undefined,
+                      }
+                    : song
+                )
+              );
+              addLog(
+                payload.status === "success" ? "INFO" : "ERROR",
+                `[${payload.index}] ${payload.title}: ${payload.message}`
+              );
+              break;
+          }
+        });
 
-      // Listen for download error events
-      listen("download-error", (event) => {
-        const payload = event.payload as {
-          type: string;
-          message: string;
-        };
+        const unlisten2 = await listen("download-complete", (event) => {
+          const payload = event.payload as {
+            type: string;
+            success: number;
+            failed: number;
+            skipped: number;
+            total: number;
+          };
 
-        setStatusMessage(`Error: ${payload.message}`);
-        setIsDownloading(false);
-        addLog("ERROR", payload.message);
-      }),
-    ];
+          setStatusMessage(`Download complete: ${payload.success} success, ${payload.failed} failed`);
+          setIsDownloading(false);
+          addLog(
+            "INFO",
+            `Album complete: ${payload.success} success, ${payload.failed} failed, ${payload.skipped} skipped`
+          );
+        });
+
+        const unlisten3 = await listen("download-error", (event) => {
+          const payload = event.payload as {
+            type: string;
+            message: string;
+          };
+
+          setStatusMessage(`Error: ${payload.message}`);
+          setIsDownloading(false);
+          addLog("ERROR", payload.message);
+        });
+
+        // 保存 unlisten 函数
+        unlisteners.push(unlisten1, unlisten2, unlisten3);
+      } catch (error) {
+        console.error("Failed to setup event listeners:", error);
+      }
+    };
+
+    setupListeners();
 
     // Cleanup function
     return () => {
-      unlisteners.forEach((unlisten) => unlisten());
+      unlisteners.forEach((unlisten) => {
+        try {
+          unlisten();
+        } catch (error) {
+          console.error("Error unlistening:", error);
+        }
+      });
     };
   }, []);
 
@@ -215,7 +274,9 @@ function App() {
         limit: config.limit ? parseInt(config.limit) : null,
         timeout: parseInt(config.timeout),
         retries: parseInt(config.retries),
+        delay: parseFloat(config.delay),
         overwrite: config.overwrite,
+        renumber: config.renumber,
         verbose: config.verbose,
         pythonInfo,
       });
@@ -249,6 +310,8 @@ function App() {
         outputDir: config.outputDir,
         timeout: parseInt(config.timeout),
         retries: parseInt(config.retries),
+        delay: parseFloat(config.delay),
+        renumber: config.renumber,
         verbose: config.verbose,
         pythonInfo,
       });
@@ -261,6 +324,18 @@ function App() {
       setIsDownloading(false);
     }
   };
+
+  // Show loading state while initializing
+  if (!isInitialized) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white dark:bg-gray-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-700 dark:text-gray-300">Loading Resource Fetcher...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark text-foreground-light dark:text-foreground-dark transition-colors duration-200">

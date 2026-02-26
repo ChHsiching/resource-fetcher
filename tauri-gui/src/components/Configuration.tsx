@@ -7,7 +7,9 @@ interface DownloadConfig {
   limit: string;
   timeout: string;
   retries: string;
+  delay: string;
   overwrite: boolean;
+  renumber: boolean;
   verbose: boolean;
 }
 
@@ -116,6 +118,20 @@ export default function Configuration({ config, onChange }: ConfigurationProps) 
                 />
               </div>
 
+              {/* Delay */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Delay Between Downloads (seconds)</label>
+                <input
+                  type="number"
+                  value={config.delay}
+                  onChange={(e) => updateConfig({ delay: e.target.value })}
+                  min="0.1"
+                  max="10"
+                  step="0.1"
+                  className="w-full px-4 py-2 rounded-md border border-border-light dark:border-border-dark bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
+                />
+              </div>
+
               {/* Checkboxes */}
               <div className="space-y-2">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -126,6 +142,16 @@ export default function Configuration({ config, onChange }: ConfigurationProps) 
                     className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                   />
                   <span className="text-sm">Overwrite existing files</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.renumber}
+                    onChange={(e) => updateConfig({ renumber: e.target.checked })}
+                    className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="text-sm">Add leading zero prefixes (001_, 010_, 100_)</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer">

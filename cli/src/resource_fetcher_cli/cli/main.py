@@ -18,10 +18,13 @@ try:
     from resource_fetcher_cli.cli.progress_markers import (
         album_complete,
         album_start,
-        error as emit_error,
         song_complete,
         song_start,
     )
+    from resource_fetcher_cli.cli.progress_markers import (
+        error as emit_error,
+    )
+
     HAS_MARKERS = True
 except ImportError:
     HAS_MARKERS = False
@@ -322,7 +325,7 @@ def download_album(
 
         # Emit album start event for GUI
         if HAS_MARKERS:
-            album_start(album.title, album.source, len(songs))
+            album_start(album.title, album.source, len(album.songs))
 
         # Apply limit
         songs = album.songs[:limit] if limit else album.songs
