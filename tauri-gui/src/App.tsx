@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { getVersion } from "@tauri-apps/api/app";
 import { Moon, Sun } from "lucide-react";
 import UrlInput from "./components/UrlInput";
 import Configuration from "./components/Configuration";
 import ProgressDisplay, { SongProgress } from "./components/ProgressDisplay";
 import LogDisplay from "./components/LogDisplay";
+import { UpdateNotification } from "./components/UpdateNotification";
+import { updateService } from "./services/updateService";
 
 interface PythonInfo {
   python_path: string;
@@ -28,6 +31,12 @@ interface LogEntry {
   timestamp: string;
   level: "INFO" | "WARNING" | "ERROR" | "DEBUG";
   message: string;
+}
+
+interface UpdateInfo {
+  version: string;
+  body: string;
+  date: string;
 }
 
 const DEFAULT_CONFIG: DownloadConfig = {
@@ -53,6 +62,9 @@ function App() {
   const [statusMessage, setStatusMessage] = useState("Ready");
   const [pythonInfo, setPythonInfo] = useState<PythonInfo | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [appVersion, setAppVersion] = useState<string>("");
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [showUpdateNotification, setShowUpdateNotification] = useState(false);
 
   const addLog = (level: "INFO" | "WARNING" | "ERROR" | "DEBUG", message: string) => {
     const now = new Date();
@@ -85,13 +97,19 @@ function App() {
           setPythonInfo(info);
           console.log("Python info loaded:", info);
           setStatusMessage("Ready");
+
+          // Get app version
+          const version = await getVersion();
+          setAppVersion(version);
         } else {
           console.warn("Not running in Tauri context");
           setStatusMessage("Development mode - Tauri API not available");
+          setAppVersion("dev");
         }
       } catch (err) {
         console.error("Failed to get Python info:", err);
         setStatusMessage("Warning: Python environment not found");
+        setAppVersion("unknown");
       } finally {
         // Always mark as initialized, even if Python info loading failed
         setIsInitialized(true);
@@ -99,6 +117,27 @@ function App() {
     };
 
     loadPythonInfo();
+
+    // Check for updates on mount (delayed)
+    const checkForUpdates = async () => {
+      try {
+        if (typeof window !== 'undefined' && '__TAURI__' in window) {
+          const update = await updateService.checkForUpdates();
+          if (update && update.available) {
+            setUpdateInfo(update);
+            // Delay showing notification to avoid interrupting startup
+            setTimeout(() => {
+              setShowUpdateNotification(true);
+            }, 3000);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to check for updates:", err);
+      }
+    };
+
+    // Delay update check to avoid blocking app startup
+    setTimeout(checkForUpdates, 1000);
   }, []);
 
   // Setup Tauri event listeners for real-time progress updates
@@ -389,11 +428,24 @@ function App() {
       <footer className="border-t border-border-light dark:border-border-dark bg-white dark:bg-gray-800 mt-auto">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400">
-            <span>Resource Fetcher v0.2.0</span>
+            <span className="version-badge">v{appVersion}</span>
             <span>Built with Tauri + React</span>
           </div>
         </div>
       </footer>
+
+      {/* Update Notification */}
+      {showUpdateNotification && updateInfo && (
+        <UpdateNotification
+          update={updateInfo}
+          onUpdateComplete={() => {
+            setShowUpdateNotification(false);
+          }}
+          onDismiss={() => {
+            setShowUpdateNotification(false);
+          }}
+        />
+      )}
     </div>
   );
 }
