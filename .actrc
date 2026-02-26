@@ -4,12 +4,6 @@
 # Use latest Ubuntu image
 -P ubuntu-latest=catthehacker/ubuntu:act-latest
 
-# Don't push to Docker
---no-push
-
-# Use local modules
---use-react-action
-
 # Bind mount workspace
 --bind
 
