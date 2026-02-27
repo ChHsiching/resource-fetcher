@@ -47,9 +47,11 @@ def build_cli_binary() -> None:
     else:
         binary_name = "resource-fetcher"
 
-    # PyInstaller command
+    # PyInstaller command - use python -m to ensure it's found
     pyinstaller_cmd = [
-        "pyinstaller",
+        sys.executable,
+        "-m",
+        "PyInstaller",
         "--onefile",  # Create single executable
         "--name",
         binary_name,
@@ -65,43 +67,7 @@ def build_cli_binary() -> None:
         print(f"Error: CLI binary not found at {binary_path}")
         sys.exit(1)
 
-    print(f"✅ CLI binary created: {binary_path}")
-    print(f"   Size: {binary_path.stat().st_size / (1024*1024):.2f} MB")
-
-
-def build_gui_binary() -> None:
-    """Build the GUI standalone executable."""
-    print("Building GUI standalone executable...")
-
-    # Determine platform-specific settings
-    if sys.platform == "win32":
-        binary_name = "resource-fetcher-gui.exe"
-    else:
-        binary_name = "resource-fetcher-gui"
-
-    # PyInstaller command
-    pyinstaller_cmd = [
-        "pyinstaller",
-        "--onefile",  # Create single executable
-        "--windowed",  # No console window for GUI
-        "--name",
-        binary_name,
-        "--clean",  # Clean cache before building
-        "--hidden-import", "tkinter",
-        "--hidden-import", "ttkbootstrap",
-        "--hidden-import", "pyperclip",
-        "gui/src/resource_fetcher_gui/gui/main.py",
-    ]
-
-    run_command(pyinstaller_cmd)
-
-    # Verify the binary was created
-    binary_path = Path("dist") / binary_name
-    if not binary_path.exists():
-        print(f"Error: GUI binary not found at {binary_path}")
-        sys.exit(1)
-
-    print(f"✅ GUI binary created: {binary_path}")
+    print(f"[OK] CLI binary created: {binary_path}")
     print(f"   Size: {binary_path.stat().st_size / (1024*1024):.2f} MB")
 
 
@@ -114,16 +80,9 @@ def run_tests() -> None:
 
 def main() -> None:
     """Main build process."""
-    parser = argparse.ArgumentParser(description="Build Resource Fetcher binaries")
-    parser.add_argument("--cli", action="store_true", help="Build CLI binary only")
-    parser.add_argument("--gui", action="store_true", help="Build GUI binary only")
-    parser.add_argument("--all", action="store_true", help="Build both CLI and GUI (default)")
+    parser = argparse.ArgumentParser(description="Build Resource Fetcher CLI binary")
     parser.add_argument("--no-test", action="store_true", help="Skip running tests")
     args = parser.parse_args()
-
-    # Default to building both if no specific option given
-    build_cli = args.cli or args.all or (not args.gui and not args.cli)
-    build_gui = args.gui or args.all or (not args.gui and not args.cli)
 
     print("=" * 60)
     print("Resource Fetcher - Local Build Script")
@@ -141,26 +100,17 @@ def main() -> None:
     # Step 2: Clean
     clean_dist()
 
-    # Step 3: Build
-    if build_cli:
-        build_cli_binary()
-    if build_gui:
-        build_gui_binary()
+    # Step 3: Build CLI
+    build_cli_binary()
 
     print("\n" + "=" * 60)
     print("[OK] Build completed successfully!")
     print("=" * 60)
-    print("\nTo test the binaries:")
-    if build_cli:
-        if sys.platform == "win32":
-            print("  .\\dist\\resource-fetcher.exe --help")
-        else:
-            print("  ./dist/resource-fetcher --help")
-    if build_gui:
-        if sys.platform == "win32":
-            print("  .\\dist\\resource-fetcher-gui.exe")
-        else:
-            print("  ./dist/resource-fetcher-gui")
+    print("\nTo test the binary:")
+    if sys.platform == "win32":
+        print("  .\\dist\\resource-fetcher.exe --help")
+    else:
+        print("  ./dist/resource-fetcher --help")
 
 
 if __name__ == "__main__":

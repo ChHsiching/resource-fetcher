@@ -1,14 +1,13 @@
 # Resource Fetcher
 
-A flexible, extensible tool for batch downloading resources from websites.
+A flexible, extensible command-line tool for batch downloading resources from websites.
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![Tests](https://img.shields.io/badge/Tests-111%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-63%20passing-brightgreen)
 
 ## Features
 
-- **Dual Interface**: Both command-line (CLI) and graphical user interface (GUI)
 - **Batch Downloads**: Download entire albums or resource collections in one go
 - **Smart Renumbering**: Add leading zero prefixes for proper sorting (e.g., 001_, 010_, 100_)
   - Dynamic padding based on total songs (1/2/3 digits)
@@ -17,280 +16,186 @@ A flexible, extensible tool for batch downloading resources from websites.
 - **Mojibake Correction**: Automatically fixes corrupted character encoding
 - **Resilient**: Built-in retry logic with exponential backoff
 - **Extensible**: Plugin-based architecture for adding new site adapters
-- **Progress Tracking**: Real-time download progress and statistics
-- **Frontend-Backend Separation**: GUI calls CLI via subprocess, both fully independent
+- **Real-Time Progress**: Live download progress streaming with detailed statistics
 
 ## Installation
 
-### Option 1: Standalone Executables (Recommended)
+### Option 1: Download Binary
 
 Download from the [Releases](https://github.com/ChHsiching/resource-fetcher/releases) page:
-- `resource-fetcher.exe` / `resource-fetcher` - Command-line interface
-- `resource-fetcher-gui.exe` / `resource-fetcher-gui` - Graphical user interface
 
-No Python installation required.
+**Windows:**
+- `resource-fetcher-windows.exe`
 
-### Option 2: From Source
+**Linux:**
+- `resource-fetcher-linux`
 
-**Requirements**: Python 3.10+, Poetry
+**macOS:**
+- `resource-fetcher-macos`
+
+### Option 2: Build from Source
 
 ```bash
 # Clone repository
 git clone https://github.com/ChHsiching/resource-fetcher.git
 cd resource-fetcher
 
-# Install Poetry (if not installed)
-curl -sSL https://install.python-poetry.org | python3 -
+# Create virtual environment in cli directory
+python -m venv cli/.venv
 
-# Create virtual environment
-python -m venv .venv
+# Install Poetry (Windows)
+cli\.venv\Scripts\python.exe -m pip install poetry
 
-# Activate (Windows)
-.venv\Scripts\activate
-
-# Activate (Linux/macOS)
-source .venv/bin/activate
+# Install Poetry (Linux/macOS)
+cli/.venv/bin/python -m pip install poetry
 
 # Install dependencies
-poetry install
+cd cli
+../.venv/Scripts/poetry.exe install  # Windows
+# or
+../.venv/bin/poetry install          # Linux/macOS
+
+# Build executable
+.venv/Scripts/python.exe build.py    # Windows
+# or
+.venv/bin/python build.py            # Linux/macOS
 ```
 
-## Quick Start
+## Usage
 
-### Using GUI (Recommended)
-
-1. Run `resource-fetcher-gui.exe` (or `poetry run python -m resource_fetcher_gui.gui.main` from source)
-2. Paste the album URL
-3. Configure options (output directory, limits, etc.)
-4. Click "Download"
-5. Monitor progress in real-time
-
-### Using CLI
-
-**Executable:**
+### Download an Album
 
 ```bash
-resource-fetcher.exe --url https://example.com/album/123
+resource-fetcher --url "https://www.izanmei.cc/album/hymns-442-1.html" --output ./downloads
 ```
 
-**From Source:**
+### Command-Line Options
 
+```
+Options:
+  --url TEXT              URL of the album or song to download
+  --output PATH           Output directory (default: ./downloads)
+  --limit INTEGER         Maximum number of songs to download
+  --timeout INTEGER       Download timeout per song in seconds (default: 60)
+  --retries INTEGER       Number of retry attempts (default: 3)
+  --delay FLOAT           Delay between downloads in seconds (default: 0.5)
+  --overwrite             Overwrite existing files
+  --renumber              Renumber files with leading zeros (e.g., 001_, 010_)
+  --verbose               Enable verbose logging
+  --help                  Show help message
+```
+
+### Examples
+
+**Download with custom timeout:**
 ```bash
-# From repository root
-poetry run python -m resource_fetcher_cli.cli.main --url https://example.com/album/123
+resource-fetcher --url "URL" --timeout 120
 ```
 
-**View All Options:**
-
+**Limit download to first 10 songs:**
 ```bash
-resource-fetcher.exe --help
-# or from source:
-poetry run python -m resource_fetcher_cli.cli.main --help
+resource-fetcher --url "URL" --limit 10
 ```
 
-### Song Renumbering Feature
-
-**Option 1: Renumber during download**
-
+**Enable renumbering with leading zeros:**
 ```bash
-# Add leading zero prefixes for proper sorting
-resource-fetcher.exe --url <URL> --renumber
-
-# Limit to first 10 songs
-resource-fetcher.exe --url <URL> --renumber --limit 10
+resource-fetcher --url "URL" --renumber
 ```
 
-**Option 2: Renumber existing directory**
-
+**Verbose output for debugging:**
 ```bash
-# Renumber all MP3 files in a directory
-resource-fetcher.exe --renumber-dir /path/to/songs
-```
-
-**Renumbering Logic:**
-- 1-9 songs → 1 digit: `1_`, `2_`, `3_`...
-- 10-99 songs → 2 digits: `01_`, `02_`, `10_`...`99_`
-- 100+ songs → 3 digits: `001_`, `002_`, `100_`...
-
-## Architecture
-
-This project uses a **frontend-backend separation** architecture:
-
-```
-┌─────────────────────────────────────┐
-│         GUI Frontend                │
-│  (resource-fetcher-gui.exe)         │
-│                                     │
-│  - Modern ttkbootstrap interface   │
-│  - Real-time progress display       │
-│  - Configuration management         │
-└─────────────┬───────────────────────┘
-              │ subprocess
-              ▼
-┌─────────────────────────────────────┐
-│         CLI Backend                 │
-│  (resource-fetcher.exe)             │
-│                                     │
-│  - Standalone command-line tool     │
-│  - Can be used independently        │
-│  - All download logic               │
-└─────────────────────────────────────┘
-```
-
-**Key Benefits:**
-- CLI and GUI are completely separate programs
-- CLI can be used independently in scripts/automation
-- GUI provides user-friendly interface via subprocess calls
-- Each can be maintained as separate subprojects
-
-## Project Structure
-
-```
-resource-fetcher/
-├── cli/                    # CLI project (Poetry-managed)
-│   ├── core/              # Core library
-│   │   └── src/resource_fetcher_core/
-│   │       ├── adapters/  # Site adapters
-│   │       ├── core/      # Interfaces & models
-│   │       └── utils/     # HTTP utilities
-│   ├── pyproject.toml      # CLI dependencies
-│   └── src/resource_fetcher_cli/
-│       └── cli/main.py     # CLI entry point
-├── gui/                    # GUI project (Poetry-managed)
-│   ├── cli/                # CLI as backend component
-│   ├── pyproject.toml      # GUI dependencies
-│   └── src/resource_fetcher_gui/
-│       └── gui/
-│           ├── core/       # GUI services
-│           ├── widgets/    # UI components
-│           └── main.py     # GUI entry point
-├── tests/                  # All tests (111 total)
-│   ├── unit/             # 43 unit tests
-│   ├── integration/      # 25 integration tests
-│   └── gui/              # 43 GUI tests
-├── .venv/                  # Python virtual environment
-├── build.py               # Build script for CLI & GUI
-└── pyproject.toml         # Root configuration
+resource-fetcher --url "URL" --verbose
 ```
 
 ## Development
 
+### Setup Development Environment
+
 ```bash
-# Install Poetry (if needed)
-curl -sSL https://install.python-poetry.org | python3 -
+# Create virtual environment
+python -m venv .venv
+
+# Activate (Linux/macOS)
+source .venv/bin/activate
+
+# Activate (Windows)
+.venv\Scripts\activate
+
+# Install Poetry
+pip install poetry
 
 # Install dependencies
 poetry install
-
-# Run all 111 tests
-poetry run pytest tests/ -v
-
-# Run specific test
-poetry run pytest tests/unit/test_renumbering.py -v
-
-# Lint code
-poetry run ruff check cli/ gui/
-
-# Format code
-poetry run ruff format cli/ gui/
-
-# Type checking
-poetry run mypy cli/
-
-# Build CLI only
-python build.py --cli
-
-# Build GUI only
-python build.py --gui
-
-# Build both
-python build.py
 ```
 
-## Testing
-
-The project has comprehensive test coverage with 111 tests:
+### Running Tests
 
 ```bash
-# Unit tests (43 tests)
+# Run all tests
+poetry run pytest tests/ -v
+
+# Run unit tests only
 poetry run pytest tests/unit/ -v
 
-# Integration tests (25 tests)
+# Run integration tests only
 poetry run pytest tests/integration/ -v
 
-# GUI tests (43 tests)
-poetry run pytest tests/gui/ -v
+# Run with coverage
+poetry run pytest tests/ --cov=cli/core/src --cov=cli/src
+```
 
-# Test coverage
-poetry run pytest tests/ --cov=cli/core/src --cov=cli/src --cov=gui/src
+### Code Quality
+
+```bash
+# Lint
+poetry run ruff check cli/
+
+# Format
+poetry run ruff format cli/
+
+# Type check
+poetry run mypy cli/
+```
+
+## Architecture
+
+```
+resource-fetcher/
+├── cli/                    # CLI application
+│   ├── core/               # Core library
+│   │   ├── src/            # Core modules
+│   │   │   ├── adapters/   # Site adapters (plugin system)
+│   │   │   ├── models/     # Data models
+│   │   │   └── utils/      # Utilities (HTTP, filename handling)
+│   │   └── pyproject.toml  # Core package config
+│   └── src/                # CLI entry point
+│       └── resource_fetcher_cli/
+│           └── cli/
+│               └── main.py
+├── tests/                  # Test suite
+│   ├── unit/              # Unit tests
+│   ├── integration/       # Integration tests
+│   └── fixtures/          # Test fixtures
+├── build.py               # Build script for PyInstaller
+└── pyproject.toml         # Root project config
 ```
 
 ## Supported Sites
 
-- **Izanmei** (izanmei.cc) - Christian music albums
-
-## Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests and ensure they pass
-5. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-## Release Workflow
-
-This project uses an automated release workflow via GitHub Actions:
-
-### Automated Features
-
-When you push a version tag, the workflow automatically:
-1. ✅ Runs tests
-2. ✅ Extracts version number from the tag
-3. ✅ Generates CHANGELOG from git commit history
-4. ✅ Builds CLI and GUI binaries for Linux/Windows/macOS (6 binaries)
-5. ✅ Creates GitHub Release with all artifacts
-6. ✅ Sets prerelease flag automatically for alpha/beta/rc tags
-
-### Creating a Release
-
-**For an official release (e.g., v0.3.0):**
-
-```bash
-# 1. Update version in BOTH cli/pyproject.toml AND gui/pyproject.toml
-# version = "0.3.0"
-
-# 2. Commit the version bump
-git add cli/pyproject.toml gui/pyproject.toml
-git commit -m "chore: bump version to 0.3.0"
-
-# 3. Create and push tag
-git tag -a v0.3.0 -m "Release v0.3.0: Add new feature"
-git push origin main
-git push origin v0.3.0
-
-# ✅ GitHub Actions will automatically build and release!
-```
-
-**For a pre-release (e.g., v0.3.0-beta.1):**
-
-```bash
-git tag -a v0.3.0-beta.1 -m "Pre-release: beta test"
-git push origin main
-git push origin v0.3.0-beta.1
-```
+- izanmei.cc (and similar sites)
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) for details.
 
-## Acknowledgments
+## Contributing
 
-Built with Python, using:
-- [requests](https://requests.readthedocs.io/) - HTTP library
-- [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/) - HTML parsing
-- [ttkbootstrap](https://ttkbootstrap.readthedocs.io/) - Modern GUI framework
-- [Poetry](https://python-poetry.org/) - Dependency management
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.

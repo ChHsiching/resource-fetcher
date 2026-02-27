@@ -117,7 +117,38 @@ test_verify/
 # Logs
 *.log
 downloader.log
+gui.log
 
 # Temporary release artifacts
 release-artifacts/
+
+# Build artifacts
+portable/
+release/
+resource-fetcher.exe.spec
+
+# Tauri GUI
+tauri-gui/src-tauri/target/
+tauri-gui/src-tauri/gen/
+tauri-gui/dist/
+tauri-gui/build/
+tauri-gui/node_modules/.vite/
+tauri-gui/coverage/
+tauri-gui/.turbo/
+
+# Test artifacts
+tauri-gui/test_*.png
+tauri-gui/nul
+tauri-gui/app-icon.*
+tauri-gui/temp-app/
+
+# Python cache
+*.pyc
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+#
 CLAUDE.md
+.claude/
