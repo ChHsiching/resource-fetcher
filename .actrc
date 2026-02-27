@@ -1,11 +1,1 @@
-# .actrc
-# Act configuration for local GitHub Actions testing
-
-# Use latest Ubuntu image
--P ubuntu-latest=catthehacker/ubuntu:act-latest
-
-# Bind mount workspace
---bind
-
-# Verbose output
--v
+-P ubuntu-latest=node:16-buster-slim

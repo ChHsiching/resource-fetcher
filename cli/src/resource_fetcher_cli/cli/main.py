@@ -77,6 +77,30 @@ class DownloadProgress:
         return "\n".join(lines)
 
 
+def _generate_backup_urls(primary_url: str, song_id: str) -> list[str]:
+    """
+    Generate backup URLs by replacing domain in primary URL.
+
+    Args:
+        primary_url: The primary URL that may fail
+        song_id: Song ID for URL reconstruction
+
+    Returns:
+        List of backup URLs to try
+    """
+    from resource_fetcher_core.adapters.izanmei import IzanmeiAdapter
+
+    audio_bases = IzanmeiAdapter.get_audio_bases()
+
+    # Skip the first (primary) domain, return backups
+    backup_urls = []
+    for base in audio_bases[1:]:  # Skip primary
+        backup_url = f"{base}/{song_id}.mp3"
+        backup_urls.append(backup_url)
+
+    return backup_urls
+
+
 def download_song(
     url: str,
     output_dir: Path,
@@ -88,21 +112,23 @@ def download_song(
     renumber: bool = False,
     total_songs: int = 1,
     progress_callback: Any | None = None,
+    backup_urls: list[str] | None = None,
 ) -> DownloadResult:
     """
-    Download a single song with retry logic.
+    Download a single song with retry logic and automatic domain failover.
 
     Args:
-        url: Audio file URL
+        url: Primary audio file URL
         output_dir: Output directory path
         song_id: Song ID for fallback
         song_title: Song title for filename
         timeout: Request timeout in seconds
-        retries: Number of retry attempts
+        retries: Number of retry attempts per URL
         overwrite: Whether to overwrite existing files
         renumber: Whether to add leading zero prefix for sorting
         total_songs: Total number of songs (for padding calculation)
         progress_callback: Optional callback for progress updates
+        backup_urls: Optional list of backup URLs (same file, different domains)
 
     Returns:
         DownloadResult with status and metadata
@@ -110,83 +136,125 @@ def download_song(
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    for attempt in range(retries):
-        try:
-            logger.debug(f"Attempting download: {url} (attempt {attempt + 1}/{retries})")
-            response = requests.get(url, stream=True, timeout=timeout)
-            response.raise_for_status()
+    # If backup URLs not provided but song_id is available, generate them
+    if backup_urls is None and song_id:
+        backup_urls = _generate_backup_urls(url, song_id)
 
-            # Get filename from headers or use title
-            from resource_fetcher_core.utils.http import (
-                add_track_number_prefix,
-                extract_filename_from_headers,
-                sanitize_filename,
-            )
+    # Combine all URLs to try (primary first)
+    all_urls = [url] + (backup_urls or [])
 
-            filename = extract_filename_from_headers(dict(response.headers), song_id, song_title)
-            filename = sanitize_filename(filename)
+    # Try each URL with retries
+    for url_idx, current_url in enumerate(all_urls):
+        url_label = "primary" if url_idx == 0 else f"backup #{url_idx}"
 
-            # Apply renumbering if enabled
-            if renumber:
-                filename = add_track_number_prefix(filename, total_songs=total_songs)
-
-            output_path = output_dir / filename
-
-            # Check if file exists
-            if output_path.exists() and not overwrite:
-                logger.info(f"File exists, skipping: {filename}")
-                return DownloadResult(
-                    status=DownloadStatus.SKIPPED, path=output_path, message="File already exists"
+        for attempt in range(retries):
+            try:
+                logger.debug(
+                    f"Attempting download: {current_url} "
+                    f"({url_label}, attempt {attempt + 1}/{retries})"
                 )
 
-            # Download with progress tracking
-            total_size = int(response.headers.get("content-length", 0))
-            downloaded_size = 0
-            last_progress = 0
+                # 现有的下载逻辑从这里开始
+                response = requests.get(current_url, stream=True, timeout=timeout)
+                response.raise_for_status()
 
-            with open(output_path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-                        downloaded_size += len(chunk)
-
-                        # Progress callback (every 10%)
-                        if progress_callback and total_size > 0:
-                            progress = int(downloaded_size / total_size * 100)
-                            if progress - last_progress >= 10:
-                                progress_callback(progress)
-                                last_progress = progress
-
-            # Verify file integrity
-            if total_size > 0 and downloaded_size != total_size:
-                output_path.unlink()
-                raise ValueError(f"File incomplete: {downloaded_size}/{total_size} bytes")
-
-            logger.info(f"Downloaded successfully: {filename} ({downloaded_size:,} bytes)")
-            return DownloadResult(
-                status=DownloadStatus.SUCCESS,
-                path=output_path,
-                size=downloaded_size,
-                message="Download successful",
-            )
-
-        except requests.exceptions.RequestException as e:
-            logger.warning(f"Request failed (attempt {attempt + 1}): {e}")
-            if attempt == retries - 1:
-                logger.error(f"Failed to download after {retries} attempts: {url}")
-                return DownloadResult(
-                    status=DownloadStatus.FAILED, path=None, message=f"Download failed: {str(e)}"
+                # Get filename from headers or use title
+                from resource_fetcher_core.utils.http import (
+                    add_track_number_prefix,
+                    extract_filename_from_headers,
+                    sanitize_filename,
                 )
-            # Exponential backoff
-            wait_time = 2**attempt
-            logger.info(f"Retrying in {wait_time} seconds...")
-            time.sleep(wait_time)
 
-        except Exception as e:
-            logger.error(f"Unexpected error: {e}")
-            return DownloadResult(
-                status=DownloadStatus.FAILED, path=None, message=f"Error: {str(e)}"
-            )
+                filename = extract_filename_from_headers(
+                    dict(response.headers), song_id, song_title
+                )
+                filename = sanitize_filename(filename)
+
+                # Apply renumbering if enabled
+                if renumber:
+                    filename = add_track_number_prefix(filename, total_songs=total_songs)
+
+                output_path = output_dir / filename
+
+                # Check if file exists
+                if output_path.exists() and not overwrite:
+                    logger.info(f"File exists, skipping: {filename}")
+                    return DownloadResult(
+                        status=DownloadStatus.SKIPPED,
+                        path=output_path,
+                        message="File already exists",
+                    )
+
+                # Download with progress tracking
+                total_size = int(response.headers.get("content-length", 0))
+                downloaded_size = 0
+                last_progress = 0
+
+                with open(output_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+                            downloaded_size += len(chunk)
+
+                            # Progress callback (every 10%)
+                            if progress_callback and total_size > 0:
+                                progress = int(downloaded_size / total_size * 100)
+                                if progress - last_progress >= 10:
+                                    progress_callback(progress)
+                                    last_progress = progress
+
+                # Verify file integrity
+                if total_size > 0 and downloaded_size != total_size:
+                    output_path.unlink()
+                    raise ValueError(f"File incomplete: {downloaded_size}/{total_size} bytes")
+
+                logger.info(
+                    f"Downloaded successfully from {url_label}: {filename} "
+                    f"({downloaded_size:,} bytes)"
+                )
+                return DownloadResult(
+                    status=DownloadStatus.SUCCESS,
+                    path=output_path,
+                    size=downloaded_size,
+                    message=f"Download successful from {url_label}",
+                )
+
+            except requests.exceptions.RequestException as e:
+                is_last_attempt = attempt == retries - 1
+                is_last_url = url_idx == len(all_urls) - 1
+
+                logger.warning(f"Request failed ({url_label}, attempt {attempt + 1}): {e}")
+
+                # Only retry if not the last attempt for this URL
+                if not is_last_attempt:
+                    # Exponential backoff
+                    wait_time = 2**attempt
+                    logger.info(f"Retrying in {wait_time} seconds...")
+                    time.sleep(wait_time)
+
+                # If this was the last attempt for this URL, move to next URL
+                elif is_last_attempt and not is_last_url:
+                    logger.info("Trying next backup URL...")
+                    break  # Break inner retry loop, move to next URL
+
+                # If this was the last attempt on last URL, give up
+                elif is_last_attempt and is_last_url:
+                    logger.error(
+                        f"Failed to download from all {len(all_urls)} URLs "
+                        f"after {retries} attempts each"
+                    )
+                    return DownloadResult(
+                        status=DownloadStatus.FAILED,
+                        path=None,
+                        message=f"Download failed: {str(e)}",
+                    )
+
+            except Exception as e:
+                # Non-request exceptions fail immediately
+                logger.error(f"Unexpected error: {e}")
+                return DownloadResult(
+                    status=DownloadStatus.FAILED, path=None, message=f"Error: {str(e)}"
+                )
 
     return DownloadResult(status=DownloadStatus.FAILED, message="Unknown error")
 
@@ -281,6 +349,7 @@ def download_album(
     retries: int = 3,
     delay: float = 0.5,
     renumber: bool = False,
+    backup_domains: list[str] | None = None,
 ) -> bool:
     """
     Download an entire album.
@@ -294,6 +363,7 @@ def download_album(
         retries: Number of retry attempts
         delay: Delay between downloads in seconds
         renumber: Whether to add leading zero prefix for sorting
+        backup_domains: Optional list of additional backup domains
 
     Returns:
         True if all downloads succeeded, False otherwise
@@ -347,7 +417,12 @@ def download_album(
             if HAS_MARKERS:
                 song_start(idx, len(songs), song.title)
 
-            # Download song
+            # Generate backup URLs for this song if backup domains provided
+            song_backup_urls = None
+            if backup_domains:
+                song_backup_urls = [f"{domain}/song/p/{song.id}.mp3" for domain in backup_domains]
+
+            # Download song with failover support
             result = download_song(
                 url=song.url,
                 output_dir=output_dir,
@@ -358,6 +433,7 @@ def download_album(
                 overwrite=overwrite,
                 renumber=renumber,
                 total_songs=len(album.songs),
+                backup_urls=song_backup_urls,
             )
 
             # Update progress
@@ -470,7 +546,14 @@ For more information, visit: https://github.com/ChHsiching/resource-fetcher
         type=int,
         default=3,
         metavar="N",
-        help="Number of retry attempts for failed downloads (default: 3)",
+        help="Number of retry attempts per URL (default: 3)",
+    )
+
+    parser.add_argument(
+        "--backup-domains",
+        nargs="*",
+        metavar="DOMAIN",
+        help="Additional backup domains to try if primary fails (e.g., --backup-domains https://cdn.example.com)",
     )
 
     parser.add_argument(
@@ -522,6 +605,7 @@ def main() -> None:
         retries=args.retries,
         delay=args.delay,
         renumber=args.renumber,
+        backup_domains=getattr(args, 'backup_domains', None),
     )
 
     # Exit with appropriate code

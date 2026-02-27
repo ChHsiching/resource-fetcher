@@ -1,15 +1,13 @@
 # Resource Fetcher
 
-A flexible, extensible tool for batch downloading resources from websites.
+A flexible, extensible command-line tool for batch downloading resources from websites.
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![Tests](https://img.shields.io/badge/Tests-85%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-63%20passing-brightgreen)
 
 ## Features
 
-- **Modern Interface**: Cross-platform GUI built with Tauri + React + TypeScript
-- **Command-Line Interface**: Full-featured CLI for automation and scripting
 - **Batch Downloads**: Download entire albums or resource collections in one go
 - **Smart Renumbering**: Add leading zero prefixes for proper sorting (e.g., 001_, 010_, 100_)
   - Dynamic padding based on total songs (1/2/3 digits)
@@ -19,425 +17,185 @@ A flexible, extensible tool for batch downloading resources from websites.
 - **Resilient**: Built-in retry logic with exponential backoff
 - **Extensible**: Plugin-based architecture for adding new site adapters
 - **Real-Time Progress**: Live download progress streaming with detailed statistics
-- **Theme Support**: Light and dark mode toggle
-- **Frontend-Backend Separation**: GUI calls CLI via subprocess, both fully independent
 
 ## Installation
 
-### Option 1: Windows Installer (Recommended)
+### Option 1: Download Binary
 
 Download from the [Releases](https://github.com/ChHsiching/resource-fetcher/releases) page:
 
-**Installer:**
-- `Resource Fetcher_0.2.0_x64_en-US.msi` - MSI installer (3.6 MB)
+**Windows:**
+- `resource-fetcher-windows.exe`
 
-The installer creates:
-- Desktop shortcut
-- Start Menu entry
-- Add to Programs and Features (uninstaller included)
+**Linux:**
+- `resource-fetcher-linux`
 
-### Option 1a: Linux (Debian/Ubuntu)
+**macOS:**
+- `resource-fetcher-macos`
 
-Download `.deb` package from the [Releases](https://github.com/ChHsiching/resource-fetcher/releases) page:
-
-```bash
-sudo dpkg -i resource-fetcher-gui_0.2.0_amd64.deb
-sudo apt-get install -f  # Fix dependencies
-```
-
-### Option 1b: Linux (Universal)
-
-Download `.AppImage` package from the [Releases](https://github.com/ChHsiching/resource-fetcher/releases) page:
-
-```bash
-chmod +x Resource-Fetcher-0.2.0-linux.AppImage
-./Resource-Fetcher-0.2.0-linux.AppImage
-```
-
-### Option 1c: macOS
-
-Download `.dmg` file from the [Releases](https://github.com/ChHsiching/resource-fetcher/releases) page and drag to Applications.
-
-### Option 2: Portable Package
-
-**No installation required!**
-
-Download `Resource-Fetcher-Portable-win-x64.zip` (11 MB), extract, and run:
-- Double-click `Resource-Fetcher.exe` to launch GUI
-- Or use CLI from `runtime/cli/resource-fetcher.exe`
-
-### Option 3: Standalone CLI (All Platforms)
-
-Download `resource-fetcher.exe` (7.8 MB) for command-line usage only.
-
-All options include both GUI and CLI - no Python installation required!
-
-### Option 4: From Source
-
-**Requirements**: Python 3.10+, Poetry
+### Option 2: Build from Source
 
 ```bash
 # Clone repository
 git clone https://github.com/ChHsiching/resource-fetcher.git
 cd resource-fetcher
 
-# Install Poetry (if not installed)
-curl -sSL https://install.python-poetry.org | python3 -
+# Create virtual environment in cli directory
+python -m venv cli/.venv
 
-# Create virtual environment
-python -m venv .venv
+# Install Poetry (Windows)
+cli\.venv\Scripts\python.exe -m pip install poetry
 
-# Activate (Windows)
-.venv\Scripts\activate
-
-# Activate (Linux/macOS)
-source .venv/bin/activate
+# Install Poetry (Linux/macOS)
+cli/.venv/bin/python -m pip install poetry
 
 # Install dependencies
-poetry install
+cd cli
+../.venv/Scripts/poetry.exe install  # Windows
+# or
+../.venv/bin/poetry install          # Linux/macOS
+
+# Build executable
+.venv/Scripts/python.exe build.py    # Windows
+# or
+.venv/bin/python build.py            # Linux/macOS
 ```
 
-## Quick Start
+## Usage
 
-### Graphical User Interface (Tauri)
-
-**Modern cross-platform GUI with real-time progress streaming**
+### Download an Album
 
 ```bash
-# Download from Releases
-resource-fetcher-tauri.exe   # Windows
-resource-fetcher-tauri      # Linux/macOS
-
-# Or from source (requires Node.js 18+)
-cd tauri-gui
-npm install
-npm run tauri dev
+resource-fetcher --url "https://www.izanmei.cc/album/hymns-442-1.html" --output ./downloads
 ```
 
-**Features**:
-- Real-time download progress with detailed statistics
-- Light/dark theme toggle
-- Configurable download options (delay, renumbering, limits, etc.)
-- Live log viewing
-- Download history
+### Command-Line Options
 
-### Basic Workflow
+```
+Options:
+  --url TEXT              URL of the album or song to download
+  --output PATH           Output directory (default: ./downloads)
+  --limit INTEGER         Maximum number of songs to download
+  --timeout INTEGER       Download timeout per song in seconds (default: 60)
+  --retries INTEGER       Number of retry attempts (default: 3)
+  --delay FLOAT           Delay between downloads in seconds (default: 0.5)
+  --overwrite             Overwrite existing files
+  --renumber              Renumber files with leading zeros (e.g., 001_, 010_)
+  --verbose               Enable verbose logging
+  --help                  Show help message
+```
 
-1. Run the Tauri GUI
-2. Paste the album URL
-3. Configure options (output directory, limits, delay, etc.)
-4. Click "Download Album" or "Download Song"
-5. Monitor progress in real-time
+### Examples
 
-### Using CLI
-
-**Executable:**
-
+**Download with custom timeout:**
 ```bash
-resource-fetcher.exe --url https://example.com/album/123
+resource-fetcher --url "URL" --timeout 120
 ```
 
-**From Source:**
-
+**Limit download to first 10 songs:**
 ```bash
-# From repository root
-poetry run python -m resource_fetcher_cli.cli.main --url https://example.com/album/123
+resource-fetcher --url "URL" --limit 10
 ```
 
-**View All Options:**
-
+**Enable renumbering with leading zeros:**
 ```bash
-resource-fetcher.exe --help
-# or from source:
-poetry run python -m resource_fetcher_cli.cli.main --help
+resource-fetcher --url "URL" --renumber
 ```
 
-### Song Renumbering Feature
-
-**Option 1: Renumber during download**
-
+**Verbose output for debugging:**
 ```bash
-# Add leading zero prefixes for proper sorting
-resource-fetcher.exe --url <URL> --renumber
-
-# Limit to first 10 songs
-resource-fetcher.exe --url <URL> --renumber --limit 10
-```
-
-**Option 2: Renumber existing directory**
-
-```bash
-# Renumber all MP3 files in a directory
-resource-fetcher.exe --renumber-dir /path/to/songs
-```
-
-**Renumbering Logic:**
-- 1-9 songs → 1 digit: `1_`, `2_`, `3_`...
-- 10-99 songs → 2 digits: `01_`, `02_`, `10_`...`99_`
-- 100+ songs → 3 digits: `001_`, `002_`, `100_`...
-
-## Architecture
-
-This project uses a **modern frontend-backend architecture**:
-
-```
-┌─────────────────────────────────────┐
-│      Tauri GUI (Modern)             │
-│  Rust + React + TypeScript          │
-│  - Real-time progress streaming     │
-│  - Light/Dark theme toggle          │
-│  - Responsive UI with TailwindCSS   │
-└─────────────┬───────────────────────┘
-              │
-              │ subprocess
-              ▼
-┌─────────────────────────────────────┐
-│         CLI Backend                 │
-│  (resource-fetcher.exe)             │
-│                                     │
-│  - Standalone command-line tool     │
-│  - Can be used independently        │
-│  - All download logic               │
-└─────────────────────────────────────┘
-```
-
-**Key Benefits:**
-- CLI is completely independent and can be used in scripts/automation
-- Modern GUI with non-blocking UI and real-time updates
-- Clean separation between frontend and backend
-- Each component can be maintained independently
-
-## Project Structure
-
-```
-resource-fetcher/
-├── cli/                    # CLI project (Poetry-managed)
-│   ├── core/              # Core library
-│   │   └── src/resource_fetcher_core/
-│   │       ├── adapters/  # Site adapters
-│   │       ├── core/      # Interfaces & models
-│   │       └── utils/     # HTTP utilities
-│   ├── pyproject.toml      # CLI dependencies
-│   └── src/resource_fetcher_cli/
-│       └── cli/main.py     # CLI entry point
-├── tauri-gui/              # Tauri GUI project (Node.js)
-│   ├── src/                # React + TypeScript source
-│   ├── src-tauri/          # Rust backend
-│   │   ├── tauri.conf.json # Tauri configuration (MSI/DEB/DMG/AppImage targets)
-│   │   └── src/main.rs     # CLI path detection (portable/installed)
-│   ├── package.json        # Node.js dependencies
-│   └── tests/              # Vitest + Playwright tests
-├── tests/                  # All Python tests (63 total)
-│   ├── unit/             # 45 unit tests
-│   └── integration/      # 18 integration tests
-├── dist/                   # Build artifacts
-│   └── resource-fetcher.exe # Standalone CLI
-├── release/                # Release packages
-│   └── Resource-Fetcher-Portable-win-x64.zip
-├── .venv/                  # Python virtual environment
-├── build.py               # Build script for CLI
-├── build-all.py           # Complete build system
-└── pyproject.toml         # Root configuration
+resource-fetcher --url "URL" --verbose
 ```
 
 ## Development
 
+### Setup Development Environment
+
 ```bash
-# Install Poetry (if needed)
-curl -sSL https://install.python-poetry.org | python3 -
+# Create virtual environment
+python -m venv .venv
+
+# Activate (Linux/macOS)
+source .venv/bin/activate
+
+# Activate (Windows)
+.venv\Scripts\activate
+
+# Install Poetry
+pip install poetry
 
 # Install dependencies
 poetry install
+```
 
-# Run all 63 Python tests
+### Running Tests
+
+```bash
+# Run all tests
 poetry run pytest tests/ -v
 
-# Run specific test
-poetry run pytest tests/unit/test_renumbering.py -v
-
-# Lint code
-poetry run ruff check cli/
-
-# Format code
-poetry run ruff format cli/
-
-# Type checking
-poetry run mypy cli/
-
-# Build CLI only
-python build.py
-
-# Build everything (CLI + GUI + Installers + Portable)
-python build-all.py
-```
-
-## Building from Source
-
-### Quick Build - Everything
-
-```bash
-# Build all artifacts (CLI, GUI, installers, portable package)
-python build-all.py
-```
-
-This creates:
-- `dist/resource-fetcher.exe` - Standalone CLI (7.8 MB)
-- `tauri-gui/src-tauri/target/release/bundle/msi/*.msi` - MSI installer (Windows)
-- `tauri-gui/src-tauri/target/release/bundle/deb/*.deb` - DEB package (Linux)
-- `tauri-gui/src-tauri/target/release/bundle/appimage/*.AppImage` - AppImage (Linux)
-- `tauri-gui/src-tauri/target/release/bundle/dmg/*.dmg` - DMG image (macOS)
-- `release/Resource-Fetcher-Portable-win-x64.zip` - Portable package (Windows)
-
-### Build Individual Components
-
-```bash
-# CLI only
-python build.py
-
-# GUI with installers
-cd tauri-gui
-npm run tauri build
-```
-
-## Testing
-
-The project has comprehensive test coverage with **85 tests** (63 Python + 22 Tauri):
-
-### Python Tests (63 tests)
-
-```bash
-# Run all Python tests
-poetry run pytest tests/ -v
-
-# Unit tests (45 tests)
+# Run unit tests only
 poetry run pytest tests/unit/ -v
 
-# Integration tests (18 tests)
+# Run integration tests only
 poetry run pytest tests/integration/ -v
 
-# Test coverage
+# Run with coverage
 poetry run pytest tests/ --cov=cli/core/src --cov=cli/src
 ```
 
-### Tauri Tests (22 tests)
+### Code Quality
 
 ```bash
-cd tauri-gui
+# Lint
+poetry run ruff check cli/
 
-# Install dependencies
-npm install
+# Format
+poetry run ruff format cli/
 
-# Run Vitest unit tests (18 tests)
-npm test
-
-# Run Playwright E2E tests (4 tests)
-npm run test:e2e
-
-# Run all Tauri tests
-npm run test:all
+# Type check
+poetry run mypy cli/
 ```
 
-**Test Breakdown**:
-- 45 Python unit tests
-- 18 Python integration tests
-- 18 Tauri Vitest tests
-- 4 Tauri Playwright E2E tests
+## Architecture
 
-See [`tests/README.md`](tests/README.md) for detailed testing documentation.
-
-## Local CI Testing with Act
-
-Test GitHub Actions workflows locally without pushing:
-
-```bash
-# Install Act
-brew install act           # macOS
-choco install act          # Windows
-curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash  # Linux
-
-# Run all workflows
-act
-
-# Run specific job
-act -j test-python
-act -j test-tauri
-
-# Use helper script
-./scripts/test-act.sh
 ```
-
-**Note**: Act has limitations and cannot test all actions (e.g., release creation).
+resource-fetcher/
+├── cli/                    # CLI application
+│   ├── core/               # Core library
+│   │   ├── src/            # Core modules
+│   │   │   ├── adapters/   # Site adapters (plugin system)
+│   │   │   ├── models/     # Data models
+│   │   │   └── utils/      # Utilities (HTTP, filename handling)
+│   │   └── pyproject.toml  # Core package config
+│   └── src/                # CLI entry point
+│       └── resource_fetcher_cli/
+│           └── cli/
+│               └── main.py
+├── tests/                  # Test suite
+│   ├── unit/              # Unit tests
+│   ├── integration/       # Integration tests
+│   └── fixtures/          # Test fixtures
+├── build.py               # Build script for PyInstaller
+└── pyproject.toml         # Root project config
+```
 
 ## Supported Sites
 
-- **Izanmei** (izanmei.cc) - Christian music albums
-
-## Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests and ensure they pass
-5. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-## Release Workflow
-
-This project uses an automated release workflow via GitHub Actions:
-
-### Automated Features
-
-When you push a version tag, the workflow automatically:
-1. ✅ Runs tests
-2. ✅ Extracts version number from the tag
-3. ✅ Generates CHANGELOG from git commit history
-4. ✅ Builds CLI and Tauri GUI binaries for Linux/Windows/macOS
-5. ✅ Creates GitHub Release with all artifacts
-6. ✅ Sets prerelease flag automatically for alpha/beta/rc tags
-
-### Creating a Release
-
-**For an official release (e.g., v0.3.0):**
-
-```bash
-# 1. Update version in cli/pyproject.toml
-# version = "0.3.0"
-
-# 2. Commit the version bump
-git add cli/pyproject.toml
-git commit -m "chore: bump version to 0.3.0"
-
-# 3. Create and push tag
-git tag -a v0.3.0 -m "Release v0.3.0: Add new feature"
-git push origin main
-git push origin v0.3.0
-
-# ✅ GitHub Actions will automatically build and release!
-```
-
-**For a pre-release (e.g., v0.3.0-beta.1):**
-
-```bash
-git tag -a v0.3.0-beta.1 -m "Pre-release: beta test"
-git push origin main
-git push origin v0.3.0-beta.1
-```
+- izanmei.cc (and similar sites)
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) for details.
 
-## Acknowledgments
+## Contributing
 
-Built with:
-- [Python](https://www.python.org/) - CLI backend and download logic
-- [Tauri](https://tauri.app/) - Desktop application framework
-- [React](https://react.dev/) - Frontend UI framework
-- [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
-- [TailwindCSS](https://tailwindcss.com/) - Utility-first CSS framework
-- [requests](https://requests.readthedocs.io/) - HTTP library
-- [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/) - HTML parsing
-- [Poetry](https://python-poetry.org/) - Python dependency management
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.

@@ -121,7 +121,6 @@ gui.log
 
 # Temporary release artifacts
 release-artifacts/
-CLAUDE.md
 
 # Build artifacts
 portable/
@@ -149,3 +148,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+#
+CLAUDE.md
+.claude/

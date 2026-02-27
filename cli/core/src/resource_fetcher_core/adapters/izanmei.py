@@ -16,6 +16,21 @@ class IzanmeiAdapter(SiteAdapter):
     BASE_URL = "https://www.izanmei.cc"
     AUDIO_BASE = "https://play.xiaoh.ai/song/p"
 
+    # Backup audio base URLs (in priority order)
+    AUDIO_BASE_BACKUP = [
+        "https://play.izanm.org/song/p",
+    ]
+
+    @classmethod
+    def get_audio_bases(cls) -> list[str]:
+        """
+        Get all available audio base URLs in priority order.
+
+        Returns:
+            List of audio base URLs starting with primary
+        """
+        return [cls.AUDIO_BASE] + cls.AUDIO_BASE_BACKUP
+
     def can_handle(self, url: str) -> bool:
         """
         Check if URL belongs to izanmei.cc.
